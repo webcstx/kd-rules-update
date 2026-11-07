@@ -1,42 +1,33 @@
-# 应用广告拦截 🚀
+# 应用广告拦截
 
-自动跳过手机 App 开屏广告，再也不用等 5 秒倒计时。
+GKD 安卓广告拦截订阅，毫秒级响应，精准不误触。
 
----
-
-## 📌 订阅地址
-
+## 订阅地址
 ```
-https://github.com/webcstx/doubao-quick-tools/releases/download/v3.0.1/gkd-subscription.json3
+https://github.com/webcstx/doubao-quick-tools/releases/download/v3.0.1/GKD-subscription.json3
 ```
 
-## ✨ 功能
+## 功能
+- 🚀 毫秒级自动跳过开屏广告
+- 🎯 精准拦截，不误触正常按钮
+- 🛡️ 排除权限弹窗、通知弹窗等
+- ⚡ 快速查询模式
 
-- ⚡ **秒跳开屏广告**：打开 App 自动点跳过
-- 🎯 **智能识别**：只点广告跳过按钮，不误点正常按钮
-- 🌏 **多语言支持**：简体「跳过」、繁体「跳過」、带空格「跳 过」
-- 🚫 **防误触**：排除搜索、下一步、设置等正常按钮
+## 分类
+- 开屏广告
+- 青少年模式
+- 更新提示
+- 评价提示
+- 通知提示
+- 权限提示
+- 局部广告
+- 全屏广告
+- 分段广告
+- 功能类
+- 其他
 
-## 📱 支持的广告
-
-| 广告平台 | 说明 |
-|---------|------|
-| 穿山甲（字节） | tt_splash_skip_btn 跳过按钮 |
-| 广点通（腾讯） | 通用跳过按钮 |
-| 通用开屏 | 所有带「跳过」字样的按钮 |
-
-## 🔧 使用方法
-
-1. 下载安装 GKD App
-2. 打开 GKD → 进入「订阅」页面
-3. 点右上角「+」→ 添加订阅
-4. 粘贴上面的订阅地址
-5. 开启「应用广告拦截」开关
-6. 打开任意 App，自动跳过开屏广告
-
-## 👨‍💻 作者
-
-**webcatx**
+## 贡献
+欢迎提交规则补充和修复，查看 [贡献指南](CONTRIBUTING.md)。
 
 ## Star History
 <a href="https://star-history.com/#webcstx/doubao-quick-tools&Date">
@@ -46,3 +37,6 @@ https://github.com/webcstx/doubao-quick-tools/releases/download/v3.0.1/gkd-subsc
    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=webcstx/doubao-quick-tools&type=Date" />
  </picture>
 </a>
+
+## 作者
+webcatx
