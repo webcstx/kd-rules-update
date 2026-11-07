@@ -38,6 +38,11 @@ https://github.com/webcstx/doubao-quick-tools/releases/download/v3.0.1/gkd-subsc
 
 **webcatx**
 
-## 📄 许可证
-
-Apache License 2.0
+## Star History
+<a href="https://star-history.com/#webcstx/doubao-quick-tools&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=webcstx/doubao-quick-tools&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=webcstx/doubao-quick-tools&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=webcstx/doubao-quick-tools&type=Date" />
+ </picture>
+</a>
