@@ -1,0 +1,1 @@
+,{key:9,name:'启动所有权限禁止请求',desc:'自动关闭所有权限请求弹窗',fastQuery:true,matchTime:5000,actionMaximum:1,resetMatch:'app',enable:false,rules:[{key:0,anyMatches:['[text="拒绝"][clickable=true][visibleToUser=true]','[text="不允许"][clickable=true][visibleToUser=true]','[text="取消"][clickable=true][visibleToUser=true]']}]}
