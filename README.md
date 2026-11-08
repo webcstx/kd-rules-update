@@ -37,6 +37,3 @@ https://github.com/webcstx/doubao-quick-tools/releases/download/v3.0.1/GKD-subsc
    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=webcstx/doubao-quick-tools&type=Date" />
  </picture>
 </a>
-
-## 作者
-webcatx
