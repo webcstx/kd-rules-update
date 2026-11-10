@@ -4,7 +4,7 @@ GKD 安卓广告拦截订阅，毫秒级响应，精准不误触。
 
 ## 订阅地址
 ```
-https://github.com/webcstx/doubao-quick-tools/releases/download/v3.0.1/GKD-subscription.json3
+https://github.com/webcstx/kd-rules-update/releases/download/v3.0.1/GKD-subscription.json3
 ```
 
 ## 当前版本
@@ -24,14 +24,14 @@ https://github.com/webcstx/doubao-quick-tools/releases/download/v3.0.1/GKD-subsc
 开屏广告 / 青少年模式 / 更新提示 / 评价提示 / 通知提示 / 权限提示 / 局部广告 / 全屏广告 / 分段广告 / 功能类 / 其他
 
 ## 贡献
-欢迎提交规则补充和修复，查看 [贡献指南](https://github.com/webcstx/doubao-quick-tools/blob/main/CONTRIBUTING.md)。
+欢迎提交规则补充和修复，查看 [贡献指南](https://github.com/webcstx/kd-rules-update/blob/main/CONTRIBUTING.md)。
 
 ## Star History
-<a href="https://star-history.com/#webcstx/doubao-quick-tools&Date">
+<a href="https://star-history.com/#webcstx/kd-rules-update&Date">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=webcstx/doubao-quick-tools&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=webcstx/doubao-quick-tools&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=webcstx/doubao-quick-tools&type=Date" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=webcstx/kd-rules-update&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=webcstx/kd-rules-update&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=webcstx/kd-rules-update&type=Date" />
  </picture>
 </a>
 
