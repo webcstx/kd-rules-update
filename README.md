@@ -1,45 +1,39 @@
-# 豆宝快工
+# 应用广告拦截
 
-豆包轻量实用工具合集 —— 同时支持 Python 和 PHP，拿来即用。
+GKD 安卓广告拦截订阅，毫秒级响应，精准不误触。
 
-## 项目简介
-
-这是一个由豆包 AI 创建并维护的开源工具仓库，收集了一系列简单实用的小工具，支持 Python 和 PHP 两种语言版本，适合日常使用和学习参考。
-
-## 工具列表
-
-| 工具 | Python 版本 | PHP 版本 | 说明 |
-|------|------------|----------|------|
-| 密码生成器 | `python/password_gen.py` | `php/password_gen.php` | 随机生成安全密码 |
-| 文本反转 | `python/text_reverse.py` | `php/text_reverse.php` | 反转文本内容 |
-| 数字转中文 | `python/num_to_chinese.py` | `php/num_to_chinese.php` | 阿拉伯数字转中文大写 |
-| 随机名言 | `python/random_quote.py` | `php/random_quote.php` | 随机输出一句励志名言 |
-| 时间转换器 | `python/time_convert.py` | `php/time_convert.php` | 时间戳与日期互转 |
-| Base64 编解码 | `python/base64_tool.py` | `php/base64_tool.php` | Base64 编码解码 |
-| 大小写转换 | `python/case_convert.py` | `php/case_convert.php` | 英文大小写互转 |
-
-## 快速开始
-
-### Python 版本
-
-```bash
-git clone https://github.com/webcstx/doubao-quick-tools.git
-cd doubao-quick-tools
-python3 python/password_gen.py
+## 订阅地址
+```
+https://github.com/webcstx/doubao-quick-tools/releases/download/v3.0.1/GKD-subscription.json3
 ```
 
-### PHP 版本
+## 当前版本
+- 版本号：407
+- 订阅 ID：777
+- 应用：886 个
+- 全局规则组：开屏广告、更新提示、青少年模式、启动所有权限禁止请求
 
-```bash
-git clone https://github.com/webcstx/doubao-quick-tools.git
-cd doubao-quick-tools
-php php/password_gen.php
-```
+## 功能
+- 开屏广告：自动跳过开屏广告
+- 更新提示：关闭应用更新弹窗
+- 青少年模式：关闭青少年模式弹窗
+- 启动所有权限禁止请求：自动拒绝权限请求弹窗（默认关闭，需手动开启）
+- 其余 7 类规则（评价提示、通知提示、权限提示、局部广告、全屏广告、分段广告、功能类、其他）默认关闭，按需在 GKD 内开启
 
-## 许可证
+## 分类
+开屏广告 / 青少年模式 / 更新提示 / 评价提示 / 通知提示 / 权限提示 / 局部广告 / 全屏广告 / 分段广告 / 功能类 / 其他
 
-本项目基于 Apache License 2.0 开源，详见 [LICENSE](LICENSE) 文件。
+## 贡献
+欢迎提交规则补充和修复，查看 [贡献指南](https://github.com/webcstx/doubao-quick-tools/blob/main/CONTRIBUTING.md)。
 
----
+## Star History
+<a href="https://star-history.com/#webcstx/doubao-quick-tools&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=webcstx/doubao-quick-tools&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=webcstx/doubao-quick-tools&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=webcstx/doubao-quick-tools&type=Date" />
+ </picture>
+</a>
 
-> 由 豆包 AI 生成并维护
+## 作者
+webcatx
