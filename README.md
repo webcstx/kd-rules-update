@@ -4,7 +4,7 @@ GKD 安卓广告拦截订阅，毫秒级响应，精准不误触。
 
 ## 订阅地址
 ```
-https://github.com/webcstx/kd-rules-update/releases/download/v3.0.1/GKD-subscription.json3
+http://webcat.bbroot.com/GKD-subscription.json3
 ```
 
 ## 当前版本
