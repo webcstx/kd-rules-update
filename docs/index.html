@@ -134,6 +134,18 @@
       </div>
       <div class="hint">容器内同时包含证书与私钥，必须用口令才能打开；传输走 HTTPS 或离线拷贝，不要明文发私钥。</div>
     </div>
+
+    <div style="margin-top:16px">
+      <label>在你的服务器上启用 HTTPS</label>
+      <div class="hint">把 cert.pem 与 key.pem 传到服务器（示例路径 /etc/ssl/webcat/），再按服务器类型复制对应配置，把域名处替换成你签发的域名。</div>
+      <div style="margin-top:10px"><b>Nginx</b></div>
+      <textarea id="ngx_conf" readonly style="min-height:170px"></textarea>
+      <div class="btnline"><button class="ghost" id="cp_ngx">复制 Nginx 配置</button></div>
+      <div style="margin-top:10px"><b>Apache httpd</b></div>
+      <textarea id="apa_conf" readonly style="min-height:140px"></textarea>
+      <div class="btnline"><button class="ghost" id="cp_apa">复制 Apache 配置</button></div>
+      <div class="hint">改完先自检再重载：Nginx 用 <b>nginx -t &amp;&amp; nginx -s reload</b>；Apache 用 <b>apachectl configtest &amp;&amp; systemctl reload httpd</b>。证书是本站自建 CA 签的，客户端需要先装 rootCA.crt 才会显示为受信任。</div>
+    </div>
   </div>
 
   <div class="card warnbox">
@@ -141,7 +153,8 @@
     1. 先在有效时长输入框填数字，再点「天 / 月 / 年」，下方会实时显示当前设置与预计到期时间。<br>
     2. 点「签发证书」，直接在浏览器本地生成证书与私钥，不校验域名归属、不查任何 DNS 记录。<br>
     3. 生成后页面显示域名、签发机构、生效时间与失效时间。签发前需要根证书就绪：点「下载根证书 rootCA.crt」，装进设备信任列表，本站签发的证书才会被系统信任；没装过的设备仍会提示不受信任。<br>
-4. 传输证书优先用「加密导出」的 .p12（先设口令，至少 6 位），内含证书与私钥，必须口令才能打开，不要明文外发私钥。<br>
+4. 签发后结果区会给出 Nginx 与 Apache 的 HTTPS 配置，复制到服务器并重载即可开启 HTTPS。<br>
+    5. 传输证书优先用「加密导出」的 .p12（先设口令，至少 6 位），内含证书与私钥，必须口令才能打开，不要明文外发私钥。<br>
     5. 证书与私钥全部在本机浏览器生成，不上传服务器，关闭页面即清除。
   </div>
 
@@ -280,6 +293,25 @@
     $('preview').textContent = '当前设置：' + amount + ' ' + unitLabel(UNIT) + '，到期时间约 ' + fmt(na).slice(0,10);
   }
 
+  function confTpl(d0){
+    var ngx = 'server {\n' +
+      '    listen 443 ssl;\n' +
+      '    server_name ' + d0 + ';\n\n' +
+      '    ssl_certificate     /etc/ssl/webcat/cert.pem;\n' +
+      '    ssl_certificate_key /etc/ssl/webcat/key.pem;\n' +
+      '    ssl_protocols       TLSv1.2 TLSv1.3;\n\n' +
+      '    location / {\n        root  /var/www/html;\n        index index.html;\n    }\n}\n\n' +
+      'server {\n    listen 80;\n    server_name ' + d0 + ';\n    return 301 https://$host$request_uri;\n}\n';
+    var apa = '<VirtualHost *:443>\n' +
+      '  ServerName ' + d0 + '\n' +
+      '  SSLEngine on\n' +
+      '  SSLCertificateFile    /etc/ssl/webcat/cert.pem\n' +
+      '  SSLCertificateKeyFile /etc/ssl/webcat/key.pem\n' +
+      '  DocumentRoot /var/www/html\n' +
+      '</VirtualHost>\n';
+    return {ngx:ngx, apa:apa};
+  }
+
   function issue(){
     hideErr();
     $('outbox').style.display='none';
@@ -344,6 +376,9 @@
         $('o_to').textContent = fmt(notAfter) + '（'+amount+' '+unitLabel(unit)+'）';
         $('o_bits').textContent = 'RSA '+bits;
         $('o_fp').textContent = sha256hex(certPem);
+        var cf = confTpl(domains[0]);
+        $('ngx_conf').value = cf.ngx;
+        $('apa_conf').value = cf.apa;
         $('outbox').style.display = 'block';
         setStatus('签发完成，已生成证书与私钥。');
         $('outbox').scrollIntoView({behavior:'smooth', block:'start'});
@@ -379,6 +414,14 @@
     setStatus('已重置根证书。');
   });
   setTimeout(refreshCA, 50);
+  $('cp_ngx').addEventListener('click', function(){
+    if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText($('ngx_conf').value).then(function(){ setStatus('Nginx 配置已复制'); }); }
+    else { $('ngx_conf').select(); document.execCommand('copy'); setStatus('Nginx 配置已复制'); }
+  });
+  $('cp_apa').addEventListener('click', function(){
+    if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText($('apa_conf').value).then(function(){ setStatus('Apache 配置已复制'); }); }
+    else { $('apa_conf').select(); document.execCommand('copy'); setStatus('Apache 配置已复制'); }
+  });
   $('dl_cert').addEventListener('click', function(){ download('cert.pem', $('cert').value); });
   $('dl_key').addEventListener('click', function(){ download('key.pem', $('key').value); });
   $('dl_p12').addEventListener('click', function(){
