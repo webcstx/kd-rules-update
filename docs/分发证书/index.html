@@ -99,6 +99,8 @@
         <button class="ghost" id="cp_caa">复制 CAA 记录值</button>
       </div>
       <div class="hint"><b>记录值里引号内的 webcat.bbroot.com 是本 CA 的标识（一个 CA 域名），不是你这次要签发的域名。</b>它必须是一个纯域名，不能带斜杠、路径或随机后缀；写错成 <code>xxx.com/abc123</code> 这类带路径的值属于非法 CAA。</div>
+      <div class="hint"><b>主机记录一定填根域的 @，不要填你的子域名。</b>如果你的域名本身是子域并且已经用 CNAME 指向别处，那条 CNAME 会独占这个名字，在该子域上同时加 CAA 会被面板拒绝（DNS 规则：CNAME 不能与其他记录共存）。CAA 加在根域后，子域会继承生效。</div>
+      <div class="hint">若面板把 CAA 拆成三栏填写：标记位（flags）填 <b>0</b>，标签（tag）填 <b>issue</b>，值（value）填 <b>webcat.bbroot.com</b>（不要带引号）。</div>
       <div class="hint">通配域名再加一条：类型 CAA，主机记录 <b id="caa_host2">@</b>，记录值 <b id="caa_wild">0 issuewild "webcat.bbroot.com"</b>。<b>必须查询到上面这条已授权的 CAA 记录，才会签发；查不到记录一律不签发。如果不想限制 CA，直接不添加任何 CAA 记录即可（不是写 &quot;;&quot;）。</b></div>
     </div>
     <div class="btnline" style="margin-top:14px">
@@ -246,8 +248,10 @@
     var base = domains[0].replace(/^\*\./, '');
     VERIFY_BASE = base;
     $('caabox').style.display = 'block';
-    $('caa_host').textContent = '@（即 ' + base + '）';
-    $('caa_host2').textContent = '@（即 ' + base + '）';
+    var labels = base.split('.');
+    var zone = labels.length > 2 ? labels.slice(1).join('.') : base;
+    $('caa_host').textContent = '@（根域 ' + zone + '）';
+    $('caa_host2').textContent = '@（根域 ' + zone + '）';
     $('verify').disabled = false;
     $('vstatus').textContent = '已列出 CAA 记录。请先按上面的值添加到 DNS，查询到记录后才能签发。';
     setStatus('');
