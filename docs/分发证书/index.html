@@ -98,7 +98,8 @@
       <div class="btnline">
         <button class="ghost" id="cp_caa">复制 CAA 记录值</button>
       </div>
-      <div class="hint">通配域名再加一条：类型 CAA，主机记录 <b id="caa_host2">@</b>，记录值 <b id="caa_wild">0 issuewild "webcat.bbroot.com"</b>。<b>必须查询到上面这条已授权的 CAA 记录，才会签发；查不到记录一律不签发。</b></div>
+      <div class="hint"><b>记录值里引号内的 webcat.bbroot.com 是本 CA 的标识（一个 CA 域名），不是你这次要签发的域名。</b>它必须是一个纯域名，不能带斜杠、路径或随机后缀；写错成 <code>xxx.com/abc123</code> 这类带路径的值属于非法 CAA。</div>
+      <div class="hint">通配域名再加一条：类型 CAA，主机记录 <b id="caa_host2">@</b>，记录值 <b id="caa_wild">0 issuewild "webcat.bbroot.com"</b>。<b>必须查询到上面这条已授权的 CAA 记录，才会签发；查不到记录一律不签发。如果不想限制 CA，直接不添加任何 CAA 记录即可（不是写 &quot;;&quot;）。</b></div>
     </div>
     <div class="btnline" style="margin-top:14px">
       <button class="ghost" id="verify" disabled>验证并签发</button>
