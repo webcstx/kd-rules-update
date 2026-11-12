@@ -93,6 +93,7 @@
       <div class="kv"><span>主机记录</span><span id="v_name" style="word-break:break-all;text-align:right"></span></div>
       <div class="kv"><span>记录值</span><span id="v_value" style="word-break:break-all;text-align:right"></span></div>
       <div class="kv"><span>TTL</span><span>600（10 分钟）</span></div>
+      <div class="kv"><span>CAA 检查</span><span id="caa_res">等待验证</span></div>
     </div>
     <div class="btnline" style="margin-top:14px">
       <button class="ghost" id="verify" disabled>验证并签发</button>
@@ -260,6 +261,40 @@
       });
   }
 
+  var CA_ID = 'webcat.bbroot.com';
+
+  function queryCAA(name){
+    var url = 'https://dns.alidns.com/resolve?name=' + encodeURIComponent(name) + '&type=257';
+    return fetch(url, {cache:'no-store'})
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        if(!j.Answer) return [];
+        return j.Answer.filter(function(a){ return a.type === 257; }).map(function(a){ return String(a.data); });
+      });
+  }
+
+  function caaAllows(records, domain){
+    if(!records.length){ return {ok:true, reason:'该域名未设置 CAA，默认允许签发'}; }
+    var isWild = domain.indexOf('*.') === 0;
+    var issue = [], issuewild = [];
+    records.forEach(function(r){
+      var m = /^\s*\d+\s+(\w+)\s+"([^"]*)"\s*$/.exec(r);
+      if(!m) return;
+      var tag = m[1].toLowerCase(), val = m[2].trim();
+      if(tag === 'issue') issue.push(val);
+      if(tag === 'issuewild') issuewild.push(val);
+    });
+    var list = (isWild && issuewild.length) ? issuewild : issue;
+    if(!list.length){ return {ok:true, reason:'CAA 中没有 issue 限制，默认允许签发'}; }
+    var hit = list.some(function(v){
+      var d = v.split(';')[0].trim().toLowerCase();
+      return d === CA_ID || d === 'www.' + CA_ID;
+    });
+    if(hit){ return {ok:true, reason:'CAA 已授权本 CA'}; }
+    var denyAll = list.every(function(v){ return v === ';'; });
+    return {ok:false, reason: denyAll ? 'CAA 明确禁止任何 CA 签发' : 'CAA 只允许：' + list.map(function(v){ return v.split(';')[0].trim(); }).join('、')};
+  }
+
   function verifyAndIssue(){
     if(!TOKEN || !VERIFY_NAME){ showErr('请先生成验证记录。'); return; }
     hideErr();
@@ -272,8 +307,25 @@
         $('verify').disabled = false;
         return;
       }
-      $('vstatus').textContent = '验证通过，正在签发…';
-      issue();
+      $('vstatus').textContent = 'TXT 通过，正在检查 CAA 记录…';
+      $('caa_res').textContent = '检查中…';
+      queryCAA(VERIFY_BASE).then(function(caa){
+        var r = caaAllows(caa, parseDomains($('domains').value)[0] || '');
+        $('caa_res').textContent = (r.ok ? '通过 · ' : '不通过 · ') + r.reason;
+        if(!r.ok){
+          showErr('CAA 记录不允许签发：' + r.reason + '。如要放行，请在 DNS 添加一条 CAA 记录：0 issue "webcat.bbroot.com"（通配域名再加 0 issuewild "webcat.bbroot.com"）。');
+          $('vstatus').textContent = 'CAA 检查未通过，已停止签发。';
+          $('verify').disabled = false;
+          return;
+        }
+        $('vstatus').textContent = 'TXT 与 CAA 均通过，正在签发…';
+        issue();
+      }).catch(function(e){
+        showErr('查询 CAA 失败：' + (e && e.message ? e.message : e));
+        $('caa_res').textContent = '查询失败';
+        $('vstatus').textContent = '';
+        $('verify').disabled = false;
+      });
     }).catch(function(e){
       showErr('查询 DNS 失败：'+(e && e.message ? e.message : e)+'（可能是网络或跨域限制，请稍后重试）');
       $('vstatus').textContent = '';
