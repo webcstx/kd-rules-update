@@ -240,7 +240,18 @@
 
   var VERIFY_BASE = null;
 
-  function makeRecord(){
+  function queryCNAME(name){
+    var url = 'https://dns.alidns.com/resolve?name=' + encodeURIComponent(name) + '&type=CNAME';
+    return fetch(url, {cache:'no-store'}).then(function(r){ return r.json(); }).then(function(j){
+      var ans = j.Answer || [];
+      for(var i = 0; i < ans.length; i++){
+        if(ans[i].type === 5){ return String(ans[i].data).replace(/\.$/, ''); }
+      }
+      return null;
+    });
+  }
+
+  async function makeRecord(){
     hideErr();
     $('outbox').style.display='none';
     var domains = parseDomains($('domains').value);
@@ -250,10 +261,18 @@
     $('caabox').style.display = 'block';
     var labels = base.split('.');
     var zone = labels.length > 2 ? labels.slice(1).join('.') : base;
+    var cname = null;
+    try{ $('vstatus').textContent = '正在查询该域名现有记录…'; cname = await queryCNAME(base); }catch(e){}
     $('caa_host').textContent = '@（根域 ' + zone + '）';
     $('caa_host2').textContent = '@（根域 ' + zone + '）';
+    if(cname){
+      $('vstatus').textContent = '检测到 ' + base + ' 是 CNAME → ' + cname + '。这个名字已被 CNAME 独占，CAA 只能加在根域 ' + zone + ' 的 @ 上，不能加在 ' + labels[0] + '，子域会自动继承。';
+    }else if(base !== zone){
+      $('vstatus').textContent = '未检测到 CNAME。可加在根域 ' + zone + ' 的 @（子域继承生效），也可把主机记录填 ' + labels[0] + ' 只作用于 ' + base + '。';
+    }else{
+      $('vstatus').textContent = '当前填写的是根域自身，主机记录填 @ 即可。';
+    }
     $('verify').disabled = false;
-    $('vstatus').textContent = '已列出 CAA 记录。请先按上面的值添加到 DNS，查询到记录后才能签发。';
     setStatus('');
     $('go').disabled = false;
   }
