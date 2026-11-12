@@ -4,7 +4,7 @@ GKD 安卓广告拦截订阅，毫秒级响应，精准不误触。
 
 ## 订阅地址
 ```
-http://webcat.bbroot.com/GKD-subscription.json3
+https://webcat.bbroot.com/GKD-subscription.json3
 ```
 
 ## 当前版本
@@ -25,6 +25,16 @@ http://webcat.bbroot.com/GKD-subscription.json3
 
 ## 贡献
 欢迎提交规则补充和修复，查看 [贡献指南](https://github.com/webcstx/kd-rules-update/blob/main/CONTRIBUTING.md)。
+
+
+## SSL 证书分发
+访问 [https://webcat.bbroot.com/分发证书/](https://webcat.bbroot.com/%E5%88%86%E5%8F%91%E8%AF%81%E4%B9%A6/) ，填写域名与有效时长，验证域名归属后即可签发。
+
+- 有效时长支持天、个月、年三种单位，任意填写，签发完成后直接显示生效与失效时间
+- 签发前需在 DNS 添加 TXT 记录 `_webcat-verify.你的域名`，验证通过才会签发
+- 证书与私钥全部在浏览器本地生成，不上传服务器
+- 支持用口令导出加密的 PKCS#12 容器（`.p12`），内含证书与私钥，适合加密传输
+- 签发的是自签证书，浏览器不会信任，仅适合内网、测试与内部系统；公网免警告必须使用公共 CA 证书
 
 ## Star History
 <a href="https://star-history.com/#webcstx/kd-rules-update&Date">

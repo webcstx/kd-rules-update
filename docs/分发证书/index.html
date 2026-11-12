@@ -128,6 +128,15 @@
         <button class="ghost" id="cp_key">复制私钥</button>
       </div>
     </div>
+
+    <div style="margin-top:16px">
+      <label>加密导出（PKCS#12 容器，推荐用于传输）</label>
+      <div style="display:flex;gap:10px;align-items:center">
+        <input id="p12pass" type="password" placeholder="设置导出口令（至少 6 位）" style="flex:1">
+        <button class="ghost" id="dl_p12">导出 .p12</button>
+      </div>
+      <div class="hint">容器内同时包含证书与私钥，必须用口令才能打开；传输走 HTTPS 或离线拷贝，不要明文发私钥。</div>
+    </div>
   </div>
 
   <div class="card warnbox">
@@ -135,7 +144,7 @@
     这是<b>自签名证书</b>，签发者与持有者是同一个主体，不属于公共 CA，浏览器与手机不会把它认作“安全连接”，打开站点仍会提示不受信任。<br>
     适用范围：内网服务、测试环境、需要固定长有效期的内部系统。<br>
     公网对外站点若要不报警告，必须使用公共 CA 签发的证书，例如 Let's Encrypt（固定 90 天，无法自定义时长）。<br>
-    私钥在本机生成、不会上传到任何服务器；关闭页面即清除。
+    私钥在本机生成、不会上传到任何服务器；关闭页面即清除。导出优先用上面的加密 .p12，不要复制明文私钥外发。
   </div>
 
   <footer>webcat.bbroot.com · 证书分发页面 · 生成过程完全在本地浏览器完成</footer>
@@ -176,6 +185,19 @@
     b.style.display = 'block';
   }
   function hideErr(){ $('errbox').style.display='none'; }
+
+  var LAST = null;
+  function downloadBytes(name, bytes, mime){
+    var u8 = new Uint8Array(bytes.length);
+    for(var i=0;i<bytes.length;i++){ u8[i] = bytes.charCodeAt(i); }
+    var blob = new Blob([u8], {type: mime});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 800);
+  }
 
   function download(name, text, mime){
     var blob = new Blob([text], {type: mime || 'application/x-pem-file'});
@@ -301,6 +323,7 @@
 
         cert.sign(keys.privateKey, forge.md.sha256.create());
 
+        LAST = {privateKey: keys.privateKey, cert: cert};
         var certPem = forge.pki.certificateToPem(cert);
         var keyPem = forge.pki.privateKeyToPem(keys.privateKey);
 
@@ -329,6 +352,18 @@
   $('verify').addEventListener('click', verifyAndIssue);
   $('dl_cert').addEventListener('click', function(){ download('cert.pem', $('cert').value); });
   $('dl_key').addEventListener('click', function(){ download('key.pem', $('key').value); });
+  $('dl_p12').addEventListener('click', function(){
+    if(!LAST){ showErr('请先签发证书。'); return; }
+    var pass = $('p12pass').value || '';
+    if(pass.length < 6){ showErr('导出口令至少 6 位。'); return; }
+    try{
+      var p12 = forge.pkcs12.toPkcs12Asn1(LAST.privateKey, [LAST.cert], pass, {algorithm:'3des'});
+      downloadBytes('webcat.p12', forge.asn1.toDer(p12).getBytes(), 'application/x-pkcs12');
+      setStatus('已导出加密容器 webcat.p12，请记好口令。');
+    }catch(e){
+      showErr('导出失败：'+(e && e.message ? e.message : e));
+    }
+  });
   $('cp_cert').addEventListener('click', function(){
     navigator.clipboard.writeText($('cert').value).then(function(){ setStatus('证书已复制'); });
   });
