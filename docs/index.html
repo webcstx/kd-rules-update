@@ -102,6 +102,7 @@
 
     <div class="btnline" style="margin-top:14px">
       <button class="ghost" id="verify">验证并签发</button>
+      <button class="ghost" id="force_issue">跳过验证 · 直接签发</button>
     </div>
     <div class="hint" id="vstatus"></div>
   </div>
@@ -162,7 +163,8 @@
     1. 先在有效时长输入框填数字，再点「天 / 月 / 年」，下方会实时显示当前设置与预计到期时间。<br>
     2. 点「获取 TXT 验证记录」，会得到一条固定值：主机记录 `_webcat-verify.你的域名`，记录值 `webcat-verify=…`，把它加到 DNS。<br>
     3. 点「验证并签发」，通过后即生成证书。签发前需要根证书就绪：点「下载根证书 rootCA.crt」，装进设备信任列表，本站签发的证书才会被系统信任；没装过的设备仍会提示不受信任。<br>
-    4. 传输证书优先用「加密导出」的 .p12（先设口令，至少 6 位），内含证书与私钥，必须口令才能打开，不要明文外发私钥。<br>
+    3.1 需要跳过验证时点「跳过验证 · 直接签发」，它会不查 TXT 直接出证（手动签发，风险自负）。
+4. 传输证书优先用「加密导出」的 .p12（先设口令，至少 6 位），内含证书与私钥，必须口令才能打开，不要明文外发私钥。<br>
     5. 证书与私钥全部在本机浏览器生成，不上传服务器，关闭页面即清除。
   </div>
 
@@ -450,6 +452,14 @@
   });
   setTimeout(refreshPreview, 50);
   $('verify').addEventListener('click', verifyAndIssue);
+  $('force_issue').addEventListener('click', function(){
+    hideErr();
+    var domains = parseDomains($('domains').value);
+    if(!domains.length){ showErr('请先填写要签发的域名。'); return; }
+    if(!confirm('跳过 TXT 验证会直接签发：不校验域名归属，任何人都能为自己填写的域名签出证书。确定继续？')) return;
+    $('vstatus').textContent = '已跳过验证，正在直接签发…';
+    issue();
+  });
   $('dl_ca').addEventListener('click', function(){
     var ca = ensureCA();
     download('rootCA.crt', forge.pki.certificateToPem(ca.cert), 'application/x-x509-ca-cert');
