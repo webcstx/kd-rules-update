@@ -287,14 +287,26 @@
     return {ok:false, reason: denyAll ? 'CAA 明确禁止任何 CA 签发' : 'CAA 只允许：' + list.map(function(v){ return v.split(';')[0].trim(); }).join('、')};
   }
 
-  function verifyAndIssue(){
+  async function findCAA(domain){
+    var labels = domain.replace(/^\*\./, '').split('.');
+    for(var i = 0; i < labels.length - 1; i++){
+      var zone = labels.slice(i).join('.');
+      var recs = await queryCAA(zone);
+      if(recs.length){ return {zone:zone, records:recs}; }
+    }
+    return {zone:null, records:[], checked: labels.length - 1};
+  }
+
+  async function verifyAndIssue(){
     if(!VERIFY_BASE){ showErr('请先填写域名，再点「查看 CAA 记录」。'); return; }
     hideErr();
     $('verify').disabled = true;
-    $('vstatus').textContent = '正在检查 CAA 记录…';
+    $('vstatus').textContent = '正在向 DNS 查询 CAA 记录（含上级域名继承）…';
     $('caa_res').textContent = '检查中…';
-    queryCAA(VERIFY_BASE).then(function(caa){
-      var r = caaAllows(caa, parseDomains($('domains').value)[0] || '');
+    try{
+      var found = await findCAA(VERIFY_BASE);
+      var r = caaAllows(found.records, parseDomains($('domains').value)[0] || '');
+      if(found.zone){ r.reason = r.reason + '（查询位置：' + found.zone + '）'; }
       $('caa_res').textContent = (r.ok ? '通过 · ' : '不通过 · ') + r.reason;
       if(!r.ok){
         showErr('CAA 记录不允许签发：' + r.reason + '。如要放行，请在 DNS 添加一条 CAA 记录：0 issue "webcat.bbroot.com"（通配域名再加 0 issuewild "webcat.bbroot.com"）。');
@@ -304,12 +316,12 @@
       }
       $('vstatus').textContent = 'CAA 通过，正在签发…';
       issue();
-    }).catch(function(e){
+    }catch(e){
       showErr('查询 CAA 失败：' + (e && e.message ? e.message : e));
       $('caa_res').textContent = '查询失败';
       $('vstatus').textContent = '';
       $('verify').disabled = false;
-    });
+    }
   }
 
   var CA_KEY = 'webcat_free_ca_key', CA_CERT = 'webcat_free_ca_crt';
