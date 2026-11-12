@@ -95,6 +95,17 @@
       <div class="kv"><span>TTL</span><span>600（10 分钟）</span></div>
       <div class="kv"><span>CAA 检查</span><span id="caa_res">等待验证</span></div>
     </div>
+
+    <div id="caabox" style="display:none;margin-top:14px">
+      <label>CAA 记录（在域名 DNS 里填写）</label>
+      <div class="kv"><span>类型</span><span>CAA</span></div>
+      <div class="kv"><span>主机记录</span><span id="caa_host" style="word-break:break-all;text-align:right">@</span></div>
+      <div class="kv"><span>记录值</span><span id="caa_val" style="word-break:break-word;text-align:right">0 issue "webcat.bbroot.com"</span></div>
+      <div class="btnline">
+        <button class="ghost" id="cp_caa">复制 CAA 记录值</button>
+      </div>
+      <div class="hint">通配域名再加一条：类型 CAA，主机记录 <b id="caa_host2">@</b>，记录值 <b id="caa_wild">0 issuewild "webcat.bbroot.com"</b>。域名本来没有 CAA 记录时，可以直接签发，不必添加。</div>
+    </div>
     <div class="btnline" style="margin-top:14px">
       <button class="ghost" id="verify" disabled>验证并签发</button>
       <button class="ghost" id="mkrec2">重新生成记录</button>
@@ -244,6 +255,9 @@
     $('v_name').textContent = VERIFY_NAME;
     $('v_value').textContent = TOKEN;
     $('vrecord').style.display = 'block';
+    $('caabox').style.display = 'block';
+    $('caa_host').textContent = '@（即 ' + base + '）';
+    $('caa_host2').textContent = '@（即 ' + base + '）';
     $('verify').disabled = false;
     $('vstatus').textContent = '记录已生成，请到 DNS 面板添加这条 TXT，保存后点「验证并签发」。';
     setStatus('');
@@ -486,6 +500,12 @@
     var ca = ensureCA();
     download('rootCA.crt', forge.pki.certificateToPem(ca.cert), 'application/x-x509-ca-cert');
     setStatus('已下载根证书 rootCA.crt，请在设备里安装。');
+  });
+  $('cp_caa').addEventListener('click', function(){
+    var txt = '0 issue "webcat.bbroot.com"';
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(function(){ setStatus('CAA 记录值已复制'); });
+    }
   });
   $('reset_ca').addEventListener('click', function(){
     if(!confirm('重置后旧证书仍可用，但新证书要用新的根证书才能被信任。确定重置？')) return;
