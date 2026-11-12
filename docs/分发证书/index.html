@@ -87,7 +87,7 @@
 
   <div class="card" id="vbox">
     <label>第 2 步 · CAA 验证</label>
-    <div class="hint">签发前会检查该域名的 CAA 策略，确认是否授权本 CA。域名没有 CAA 记录时默认放行。</div>
+    <div class="hint">签发前会向 DNS 查询该域名的 CAA 记录，查到并确认授权本 CA 才允许签发；查不到记录则不签发。</div>
 
     <div id="caabox" style="display:none;margin-top:14px">
       <label>CAA 记录（在域名 DNS 里填写）</label>
@@ -98,7 +98,7 @@
       <div class="btnline">
         <button class="ghost" id="cp_caa">复制 CAA 记录值</button>
       </div>
-      <div class="hint">通配域名再加一条：类型 CAA，主机记录 <b id="caa_host2">@</b>，记录值 <b id="caa_wild">0 issuewild "webcat.bbroot.com"</b>。域名本来没有 CAA 记录时，可以直接签发，不必添加。</div>
+      <div class="hint">通配域名再加一条：类型 CAA，主机记录 <b id="caa_host2">@</b>，记录值 <b id="caa_wild">0 issuewild "webcat.bbroot.com"</b>。<b>必须查询到上面这条已授权的 CAA 记录，才会签发；查不到记录一律不签发。</b></div>
     </div>
     <div class="btnline" style="margin-top:14px">
       <button class="ghost" id="verify" disabled>验证并签发</button>
@@ -248,7 +248,7 @@
     $('caa_host').textContent = '@（即 ' + base + '）';
     $('caa_host2').textContent = '@（即 ' + base + '）';
     $('verify').disabled = false;
-    $('vstatus').textContent = '已列出 CAA 记录。域名没有 CAA 记录可直接验证；有记录的话按上面填好再验证。';
+    $('vstatus').textContent = '已列出 CAA 记录。请先按上面的值添加到 DNS，查询到记录后才能签发。';
     setStatus('');
     $('go').disabled = false;
   }
@@ -266,7 +266,7 @@
   }
 
   function caaAllows(records, domain){
-    if(!records.length){ return {ok:true, reason:'该域名未设置 CAA，默认允许签发'}; }
+    if(!records.length){ return {ok:false, reason:'未查询到该域名的 CAA 记录，必须先添加授权记录才能签发'}; }
     var isWild = domain.indexOf('*.') === 0;
     var issue = [], issuewild = [];
     records.forEach(function(r){
@@ -277,7 +277,7 @@
       if(tag === 'issuewild') issuewild.push(val);
     });
     var list = (isWild && issuewild.length) ? issuewild : issue;
-    if(!list.length){ return {ok:true, reason:'CAA 中没有 issue 限制，默认允许签发'}; }
+    if(!list.length){ return {ok:false, reason:'CAA 中未找到 issue 记录，未授权本 CA，不能签发'}; }
     var hit = list.some(function(v){
       var d = v.split(';')[0].trim().toLowerCase();
       return d === CA_ID || d === 'www.' + CA_ID;
