@@ -59,21 +59,16 @@
 
     <div class="row" style="margin-top:16px">
       <div>
-        <label>有效期</label>
-        <select id="months">
-          <option value="1">1 个月</option>
-          <option value="2">2 个月</option>
-          <option value="3" selected>3 个月</option>
-          <option value="4">4 个月</option>
-          <option value="5">5 个月</option>
-          <option value="6">6 个月</option>
-          <option value="7">7 个月</option>
-          <option value="8">8 个月</option>
-          <option value="9">9 个月</option>
-          <option value="10">10 个月</option>
-          <option value="11">11 个月</option>
-        </select>
-        <div class="hint">可选 1 到 11 个月，不提供 12 个月。</div>
+        <label>有效时长</label>
+        <div style="display:flex;gap:10px">
+          <input id="amount" type="number" min="1" step="1" value="90" style="flex:1">
+          <select id="unit" style="width:118px;flex:0 0 118px">
+            <option value="day" selected>天</option>
+            <option value="month">个月</option>
+            <option value="year">年</option>
+          </select>
+        </div>
+        <div class="hint">先填数字再选单位，天、月、年都可以，例如 30、90、180、365。</div>
       </div>
       <div>
         <label>密钥长度</label>
@@ -85,8 +80,24 @@
       </div>
     </div>
 
-    <div style="margin-top:18px"><button id="go">开始签发</button></div>
+    <div style="margin-top:18px"><button id="go">生成验证记录</button></div>
     <div class="hint" id="status"></div>
+  </div>
+
+  <div class="card" id="vbox">
+    <label>第 2 步 · 域名归属验证</label>
+    <div class="hint">签发前必须先到你的 DNS 面板添加一条 TXT 记录，用来证明这个域名归你所有。记录生效后才能签发。</div>
+    <div id="vrecord" style="display:none;margin-top:12px">
+      <div class="kv"><span>记录类型</span><span>TXT</span></div>
+      <div class="kv"><span>主机记录</span><span id="v_name" style="word-break:break-all;text-align:right"></span></div>
+      <div class="kv"><span>记录值</span><span id="v_value" style="word-break:break-all;text-align:right"></span></div>
+      <div class="kv"><span>TTL</span><span>600（10 分钟）</span></div>
+    </div>
+    <div class="btnline" style="margin-top:14px">
+      <button class="ghost" id="verify" disabled>验证并签发</button>
+      <button class="ghost" id="mkrec2">重新生成记录</button>
+    </div>
+    <div class="hint" id="vstatus"></div>
   </div>
 
   <div class="card errbox" id="errbox"></div>
@@ -147,10 +158,15 @@
     return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+
            pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());
   }
-  function addMonths(base, m){
+  function addSpan(base, amount, unit){
     var d = new Date(base.getTime());
-    d.setMonth(d.getMonth()+m);
+    if(unit === 'day'){ d.setDate(d.getDate()+amount); }
+    else if(unit === 'year'){ d.setFullYear(d.getFullYear()+amount); }
+    else { d.setMonth(d.getMonth()+amount); }
     return d;
+  }
+  function unitLabel(unit){
+    return unit==='day' ? '天' : (unit==='year' ? '年' : '个月');
   }
 
   function setStatus(t){ $('status').textContent = t || ''; }
@@ -177,13 +193,68 @@
     return md.digest().toHex().toUpperCase().replace(/(.{2})/g, '$1:').replace(/:$/, '');
   }
 
-  async function issue(){
+  var TOKEN = null, VERIFY_NAME = null, VERIFY_BASE = null;
+
+  function makeRecord(){
     hideErr();
     $('outbox').style.display='none';
     var domains = parseDomains($('domains').value);
     if(!domains.length){ showErr('请至少填写一个域名。'); return; }
-    var months = parseInt($('months').value, 10);
+    var base = domains[0].replace(/^\*\./, '');
+    VERIFY_BASE = base;
+    VERIFY_NAME = '_webcat-verify.' + base;
+    TOKEN = 'webcat-verify=' + forge.util.bytesToHex(forge.random.getBytesSync(14));
+    $('v_name').textContent = VERIFY_NAME;
+    $('v_value').textContent = TOKEN;
+    $('vrecord').style.display = 'block';
+    $('verify').disabled = false;
+    $('vstatus').textContent = '记录已生成，请到 DNS 面板添加这条 TXT，保存后点「验证并签发」。';
+    setStatus('');
+    $('go').disabled = false;
+  }
+
+  function queryTXT(name){
+    var url = 'https://dns.alidns.com/resolve?name=' + encodeURIComponent(name) + '&type=TXT';
+    return fetch(url, {cache:'no-store'})
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        if(!j.Answer) return [];
+        return j.Answer.filter(function(a){ return a.type === 16; })
+          .map(function(a){ return String(a.data).replace(/^"|"$/g, '').replace(/\\"/g,'"'); });
+      });
+  }
+
+  function verifyAndIssue(){
+    if(!TOKEN || !VERIFY_NAME){ showErr('请先生成验证记录。'); return; }
+    hideErr();
+    $('verify').disabled = true;
+    $('vstatus').textContent = '正在查询 DNS TXT 记录…';
+    queryTXT(VERIFY_NAME).then(function(list){
+      var hit = list.some(function(v){ return v.indexOf(TOKEN) !== -1 || v.indexOf(TOKEN.split('=')[1]) !== -1; });
+      if(!hit){
+        $('vstatus').textContent = '未检测到匹配的 TXT 记录。可能还没生效，DNS 通常需要 1 到 10 分钟，稍后再点一次。';
+        $('verify').disabled = false;
+        return;
+      }
+      $('vstatus').textContent = '验证通过，正在签发…';
+      issue();
+    }).catch(function(e){
+      showErr('查询 DNS 失败：'+(e && e.message ? e.message : e)+'（可能是网络或跨域限制，请稍后重试）');
+      $('vstatus').textContent = '';
+      $('verify').disabled = false;
+    });
+  }
+
+  function issue(){
+    hideErr();
+    $('outbox').style.display='none';
+    var domains = parseDomains($('domains').value);
+    if(!domains.length){ showErr('请至少填写一个域名。'); return; }
+    var amount = parseInt($('amount').value, 10);
+    var unit = $('unit').value;
     var bits = parseInt($('bits').value, 10);
+    if(!(amount >= 1)){ showErr('有效时长必须是大于 0 的整数。'); return; }
+    if(unit === 'year' && amount > 100){ showErr('年数过大，请填 100 以内。'); return; }
 
     $('go').disabled = true;
     setStatus('正在生成 RSA 私钥（'+bits+' 位），请稍候…');
@@ -194,7 +265,7 @@
 
         var notBefore = new Date();
         notBefore.setDate(notBefore.getDate()-1);
-        var notAfter = addMonths(new Date(), months);
+        var notAfter = addSpan(new Date(), amount, unit);
         var serial = forge.util.bytesToHex(forge.random.getBytesSync(18)).toUpperCase();
 
         var U = forge.asn1.Type.UTF8;
@@ -238,7 +309,7 @@
         $('o_domains').textContent = domains.join(', ');
         $('o_issuer').textContent = ISSUER;
         $('o_from').textContent = fmt(notBefore);
-        $('o_to').textContent = fmt(notAfter) + '（'+months+' 个月）';
+        $('o_to').textContent = fmt(notAfter) + '（'+amount+' '+unitLabel(unit)+'）';
         $('o_bits').textContent = 'RSA '+bits;
         $('o_fp').textContent = sha256hex(certPem);
         $('outbox').style.display = 'block';
@@ -253,7 +324,9 @@
     }, 30);
   }
 
-  $('go').addEventListener('click', issue);
+  $('go').addEventListener('click', makeRecord);
+  $('mkrec2').addEventListener('click', makeRecord);
+  $('verify').addEventListener('click', verifyAndIssue);
   $('dl_cert').addEventListener('click', function(){ download('cert.pem', $('cert').value); });
   $('dl_key').addEventListener('click', function(){ download('key.pem', $('key').value); });
   $('cp_cert').addEventListener('click', function(){
