@@ -240,6 +240,11 @@
 
   var VERIFY_BASE = null;
 
+  function queryType(name, type){
+    var url = 'https://dns.alidns.com/resolve?name=' + encodeURIComponent(name) + '&type=' + type;
+    return fetch(url, {cache:'no-store'}).then(function(r){ return r.json(); }).then(function(j){ return j.Answer || []; });
+  }
+
   function queryCNAME(name){
     var url = 'https://dns.alidns.com/resolve?name=' + encodeURIComponent(name) + '&type=CNAME';
     return fetch(url, {cache:'no-store'}).then(function(r){ return r.json(); }).then(function(j){
@@ -261,17 +266,33 @@
     $('caabox').style.display = 'block';
     var labels = base.split('.');
     var zone = labels.length > 2 ? labels.slice(1).join('.') : base;
-    var cname = null;
-    try{ $('vstatus').textContent = '正在查询该域名现有记录…'; cname = await queryCNAME(base); }catch(e){}
-    $('caa_host').textContent = '@（根域 ' + zone + '）';
-    $('caa_host2').textContent = '@（根域 ' + zone + '）';
+    var cname = null, aVal = null;
+    try{
+      $('vstatus').textContent = '正在查询该域名现有记录…';
+      var cr = await queryType(base, 'CNAME');
+      var ar = await queryType(base, 'A');
+      cr.forEach(function(r){ if(r.type === 5 && !cname){ cname = String(r.data).replace(/\.$/, ''); } });
+      ar.forEach(function(r){ if(r.type === 1 && !aVal){ aVal = String(r.data); } });
+    }catch(e){}
+    var hostTxt, msg;
     if(cname){
-      $('vstatus').textContent = '检测到 ' + base + ' 是 CNAME → ' + cname + '。这个名字已被 CNAME 独占，CAA 只能加在根域 ' + zone + ' 的 @ 上，不能加在 ' + labels[0] + '，子域会自动继承。';
-    }else if(base !== zone){
-      $('vstatus').textContent = '未检测到 CNAME。可加在根域 ' + zone + ' 的 @（子域继承生效），也可把主机记录填 ' + labels[0] + ' 只作用于 ' + base + '。';
+      hostTxt = '@（根域 ' + zone + '）';
+      msg = '检测到 ' + base + ' 是 CNAME → ' + cname + '。CNAME 独占这个名字，CAA 不能加在 ' + labels[0] + '，必须加在根域 ' + zone + ' 的 @ 上，子域会自动继承。';
+    }else if(aVal){
+      if(base === zone){
+        hostTxt = '@（根域 ' + base + '）';
+        msg = '检测到 ' + base + ' 已有 A 记录（' + aVal + '），CAA 直接加在这个根域上即可。';
+      }else{
+        hostTxt = labels[0] + '（即 ' + base + '）';
+        msg = '检测到 ' + base + ' 已有 A 记录（' + aVal + '），没有 CNAME 占用这个名字，CAA 可以直接加在 ' + labels[0] + '（即 ' + base + '）上，不需要加到根域。';
+      }
     }else{
-      $('vstatus').textContent = '当前填写的是根域自身，主机记录填 @ 即可。';
+      hostTxt = '@（根域 ' + zone + '）';
+      msg = '未检测到 ' + base + ' 的 A 或 CNAME 记录。可以加在根域 ' + zone + ' 的 @，也可以把主机记录填 ' + labels[0] + ' 只作用于 ' + base + '。';
     }
+    $('caa_host').textContent = hostTxt;
+    $('caa_host2').textContent = hostTxt;
+    $('vstatus').textContent = msg;
     $('verify').disabled = false;
     setStatus('');
     $('go').disabled = false;
