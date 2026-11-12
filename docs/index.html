@@ -44,6 +44,9 @@
   .btnline{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap}
   footer{color:var(--dim);font-size:12px;text-align:center;margin-top:26px}
   a{color:var(--acc);text-decoration:none}
+  .units{display:flex;gap:6px}
+  .unit{min-width:54px;padding:0 12px;background:#0a1412;border:1px solid var(--line);color:var(--dim);border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;width:auto}
+  .unit.on{background:rgba(61,220,151,.14);border-color:rgba(61,220,151,.6);color:var(--acc)}
 </style>
 </head>
 <body>
@@ -59,16 +62,16 @@
 
     <div class="row" style="margin-top:16px">
       <div>
-        <label>有效时长</label>
-        <div style="display:flex;gap:10px">
-          <input id="amount" type="number" min="1" step="1" value="90" style="flex:1">
-          <select id="unit" style="width:118px;flex:0 0 118px">
-            <option value="day" selected>天</option>
-            <option value="month">个月</option>
-            <option value="year">年</option>
-          </select>
+        <label>有效时长（先输入数字，再选 天 / 月 / 年）</label>
+        <div style="display:flex;gap:10px;align-items:stretch">
+          <input id="amount" type="number" min="1" step="1" value="90" inputmode="numeric" placeholder="输入数字" style="flex:1;font-size:20px;font-weight:700;text-align:center;padding:14px 10px">
+          <div class="units">
+            <button type="button" class="unit on" data-u="day">天</button>
+            <button type="button" class="unit" data-u="month">月</button>
+            <button type="button" class="unit" data-u="year">年</button>
+          </div>
         </div>
-        <div class="hint">先填数字再选单位，天、月、年都可以，例如 30、90、180、365。</div>
+        <div class="hint" id="preview">当前设置：90 天</div>
       </div>
       <div>
         <label>密钥长度</label>
@@ -331,13 +334,21 @@
     $('ca_status').textContent = '根证书已就绪（有效期 20 年）。装进系统后，本站签发的证书就会被信任。';
   }
 
+  var UNIT = 'day';
+  function refreshPreview(){
+    var amount = parseInt($('amount').value, 10);
+    if(!(amount >= 1)){ $('preview').textContent = '请输入大于 0 的数字'; return; }
+    var na = addSpan(new Date(), amount, UNIT);
+    $('preview').textContent = '当前设置：' + amount + ' ' + unitLabel(UNIT) + '，到期时间约 ' + fmt(na).slice(0,10);
+  }
+
   function issue(){
     hideErr();
     $('outbox').style.display='none';
     var domains = parseDomains($('domains').value);
     if(!domains.length){ showErr('请至少填写一个域名。'); return; }
     var amount = parseInt($('amount').value, 10);
-    var unit = $('unit').value;
+    var unit = UNIT;
     var bits = parseInt($('bits').value, 10);
     if(!(amount >= 1)){ showErr('有效时长必须是大于 0 的整数。'); return; }
     if(unit === 'year' && amount > 100){ showErr('年数过大，请填 100 以内。'); return; }
@@ -409,6 +420,16 @@
 
   $('go').addEventListener('click', makeRecord);
   $('mkrec2').addEventListener('click', makeRecord);
+  $('amount').addEventListener('input', refreshPreview);
+  Array.prototype.forEach.call(document.querySelectorAll('.unit'), function(b){
+    b.addEventListener('click', function(){
+      UNIT = b.getAttribute('data-u');
+      Array.prototype.forEach.call(document.querySelectorAll('.unit'), function(x){ x.classList.remove('on'); });
+      b.classList.add('on');
+      refreshPreview();
+    });
+  });
+  setTimeout(refreshPreview, 50);
   $('verify').addEventListener('click', verifyAndIssue);
   $('dl_ca').addEventListener('click', function(){
     var ca = ensureCA();
