@@ -81,26 +81,20 @@
       </div>
     </div>
 
-    <div style="margin-top:18px"><button id="go">生成验证记录</button></div>
+    <div style="margin-top:18px"><button id="go">查看 CAA 记录</button></div>
     <div class="hint" id="status"></div>
   </div>
 
   <div class="card" id="vbox">
-    <label>第 2 步 · 域名归属验证</label>
-    <div class="hint">签发前必须先到你的 DNS 面板添加一条 TXT 记录，用来证明这个域名归你所有。记录生效后才能签发。</div>
-    <div id="vrecord" style="display:none;margin-top:12px">
-      <div class="kv"><span>记录类型</span><span>TXT</span></div>
-      <div class="kv"><span>主机记录</span><span id="v_name" style="word-break:break-all;text-align:right"></span></div>
-      <div class="kv"><span>记录值</span><span id="v_value" style="word-break:break-all;text-align:right"></span></div>
-      <div class="kv"><span>TTL</span><span>600（10 分钟）</span></div>
-      <div class="kv"><span>CAA 检查</span><span id="caa_res">等待验证</span></div>
-    </div>
+    <label>第 2 步 · CAA 验证</label>
+    <div class="hint">签发前会检查该域名的 CAA 策略，确认是否授权本 CA。域名没有 CAA 记录时默认放行。</div>
 
     <div id="caabox" style="display:none;margin-top:14px">
       <label>CAA 记录（在域名 DNS 里填写）</label>
       <div class="kv"><span>类型</span><span>CAA</span></div>
       <div class="kv"><span>主机记录</span><span id="caa_host" style="word-break:break-all;text-align:right">@</span></div>
       <div class="kv"><span>记录值</span><span id="caa_val" style="word-break:break-word;text-align:right">0 issue "webcat.bbroot.com"</span></div>
+      <div class="kv"><span>CAA 检查</span><span id="caa_res">等待验证</span></div>
       <div class="btnline">
         <button class="ghost" id="cp_caa">复制 CAA 记录值</button>
       </div>
@@ -108,7 +102,7 @@
     </div>
     <div class="btnline" style="margin-top:14px">
       <button class="ghost" id="verify" disabled>验证并签发</button>
-      <button class="ghost" id="mkrec2">重新生成记录</button>
+      <button class="ghost" id="mkrec2">重新检查域名</button>
     </div>
     <div class="hint" id="vstatus"></div>
   </div>
@@ -167,8 +161,8 @@
   <div class="card warnbox">
     <b>使用说明</b><br>
     1. 先在有效时长输入框填数字，再点「天 / 月 / 年」，下方会实时显示当前设置与预计到期时间。<br>
-    2. 点「生成验证记录」，把页面给出的 TXT 记录添加到你的 DNS 面板，保存后回来点「验证并签发」。<br>
-    3. 签发前需要根证书就绪：点「下载根证书 rootCA.crt」，装进设备信任列表，本站签发的证书才会被系统信任；没装过的设备仍会提示不受信任。<br>
+    2. 点「查看 CAA 记录」，页面会列出该域名应填的 CAA 记录；域名原本没有 CAA 的可直接验证。<br>
+    3. 点「验证并签发」，通过后即生成证书。签发前需要根证书就绪：点「下载根证书 rootCA.crt」，装进设备信任列表，本站签发的证书才会被系统信任；没装过的设备仍会提示不受信任。<br>
     4. 传输证书优先用「加密导出」的 .p12（先设口令，至少 6 位），内含证书与私钥，必须口令才能打开，不要明文外发私钥。<br>
     5. 证书与私钥全部在本机浏览器生成，不上传服务器，关闭页面即清除。
   </div>
@@ -241,7 +235,7 @@
     return md.digest().toHex().toUpperCase().replace(/(.{2})/g, '$1:').replace(/:$/, '');
   }
 
-  var TOKEN = null, VERIFY_NAME = null, VERIFY_BASE = null;
+  var VERIFY_BASE = null;
 
   function makeRecord(){
     hideErr();
@@ -250,29 +244,13 @@
     if(!domains.length){ showErr('请至少填写一个域名。'); return; }
     var base = domains[0].replace(/^\*\./, '');
     VERIFY_BASE = base;
-    VERIFY_NAME = '_webcat-verify.' + base;
-    TOKEN = 'webcat-verify=' + forge.util.bytesToHex(forge.random.getBytesSync(14));
-    $('v_name').textContent = VERIFY_NAME;
-    $('v_value').textContent = TOKEN;
-    $('vrecord').style.display = 'block';
     $('caabox').style.display = 'block';
     $('caa_host').textContent = '@（即 ' + base + '）';
     $('caa_host2').textContent = '@（即 ' + base + '）';
     $('verify').disabled = false;
-    $('vstatus').textContent = '记录已生成，请到 DNS 面板添加这条 TXT，保存后点「验证并签发」。';
+    $('vstatus').textContent = '已列出 CAA 记录。域名没有 CAA 记录可直接验证；有记录的话按上面填好再验证。';
     setStatus('');
     $('go').disabled = false;
-  }
-
-  function queryTXT(name){
-    var url = 'https://dns.alidns.com/resolve?name=' + encodeURIComponent(name) + '&type=TXT';
-    return fetch(url, {cache:'no-store'})
-      .then(function(r){ return r.json(); })
-      .then(function(j){
-        if(!j.Answer) return [];
-        return j.Answer.filter(function(a){ return a.type === 16; })
-          .map(function(a){ return String(a.data).replace(/^"|"$/g, '').replace(/\\"/g,'"'); });
-      });
   }
 
   var CA_ID = 'webcat.bbroot.com';
@@ -310,38 +288,25 @@
   }
 
   function verifyAndIssue(){
-    if(!TOKEN || !VERIFY_NAME){ showErr('请先生成验证记录。'); return; }
+    if(!VERIFY_BASE){ showErr('请先填写域名，再点「查看 CAA 记录」。'); return; }
     hideErr();
     $('verify').disabled = true;
-    $('vstatus').textContent = '正在查询 DNS TXT 记录…';
-    queryTXT(VERIFY_NAME).then(function(list){
-      var hit = list.some(function(v){ return v.indexOf(TOKEN) !== -1 || v.indexOf(TOKEN.split('=')[1]) !== -1; });
-      if(!hit){
-        $('vstatus').textContent = '未检测到匹配的 TXT 记录。可能还没生效，DNS 通常需要 1 到 10 分钟，稍后再点一次。';
+    $('vstatus').textContent = '正在检查 CAA 记录…';
+    $('caa_res').textContent = '检查中…';
+    queryCAA(VERIFY_BASE).then(function(caa){
+      var r = caaAllows(caa, parseDomains($('domains').value)[0] || '');
+      $('caa_res').textContent = (r.ok ? '通过 · ' : '不通过 · ') + r.reason;
+      if(!r.ok){
+        showErr('CAA 记录不允许签发：' + r.reason + '。如要放行，请在 DNS 添加一条 CAA 记录：0 issue "webcat.bbroot.com"（通配域名再加 0 issuewild "webcat.bbroot.com"）。');
+        $('vstatus').textContent = 'CAA 检查未通过，已停止签发。';
         $('verify').disabled = false;
         return;
       }
-      $('vstatus').textContent = 'TXT 通过，正在检查 CAA 记录…';
-      $('caa_res').textContent = '检查中…';
-      queryCAA(VERIFY_BASE).then(function(caa){
-        var r = caaAllows(caa, parseDomains($('domains').value)[0] || '');
-        $('caa_res').textContent = (r.ok ? '通过 · ' : '不通过 · ') + r.reason;
-        if(!r.ok){
-          showErr('CAA 记录不允许签发：' + r.reason + '。如要放行，请在 DNS 添加一条 CAA 记录：0 issue "webcat.bbroot.com"（通配域名再加 0 issuewild "webcat.bbroot.com"）。');
-          $('vstatus').textContent = 'CAA 检查未通过，已停止签发。';
-          $('verify').disabled = false;
-          return;
-        }
-        $('vstatus').textContent = 'TXT 与 CAA 均通过，正在签发…';
-        issue();
-      }).catch(function(e){
-        showErr('查询 CAA 失败：' + (e && e.message ? e.message : e));
-        $('caa_res').textContent = '查询失败';
-        $('vstatus').textContent = '';
-        $('verify').disabled = false;
-      });
+      $('vstatus').textContent = 'CAA 通过，正在签发…';
+      issue();
     }).catch(function(e){
-      showErr('查询 DNS 失败：'+(e && e.message ? e.message : e)+'（可能是网络或跨域限制，请稍后重试）');
+      showErr('查询 CAA 失败：' + (e && e.message ? e.message : e));
+      $('caa_res').textContent = '查询失败';
       $('vstatus').textContent = '';
       $('verify').disabled = false;
     });
