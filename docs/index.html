@@ -101,7 +101,7 @@
     </div>
 
     <div class="btnline" style="margin-top:14px">
-      <button class="ghost" id="verify" disabled>验证并签发</button>
+      <button class="ghost" id="verify">验证并签发</button>
     </div>
     <div class="hint" id="vstatus"></div>
   </div>
@@ -160,7 +160,7 @@
   <div class="card warnbox">
     <b>使用说明</b><br>
     1. 先在有效时长输入框填数字，再点「天 / 月 / 年」，下方会实时显示当前设置与预计到期时间。<br>
-    2. 点「查看 CAA 记录」，页面会列出该域名应填的 CAA 记录；域名原本没有 CAA 的可直接验证。<br>
+    2. 点「获取 TXT 验证记录」，会得到一条固定值：主机记录 `_webcat-verify.你的域名`，记录值 `webcat-verify=…`，把它加到 DNS。<br>
     3. 点「验证并签发」，通过后即生成证书。签发前需要根证书就绪：点「下载根证书 rootCA.crt」，装进设备信任列表，本站签发的证书才会被系统信任；没装过的设备仍会提示不受信任。<br>
     4. 传输证书优先用「加密导出」的 .p12（先设口令，至少 6 位），内含证书与私钥，必须口令才能打开，不要明文外发私钥。<br>
     5. 证书与私钥全部在本机浏览器生成，不上传服务器，关闭页面即清除。
@@ -254,17 +254,30 @@
     $('go').disabled = false;
   }
 
+  function queryTXT(name){
+    var url = 'https://dns.alidns.com/resolve?name=' + encodeURIComponent(name) + '&type=TXT';
+    return fetch(url, {cache:'no-store'})
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        if(!j.Answer) return [];
+        return j.Answer.filter(function(a){ return a.type === 16; })
+          .map(function(a){ return String(a.data).replace(/^"|"$/g, '').replace(/\\"/g, '"'); });
+      });
+  }
+
   async function verifyAndIssue(){
-    if(!TOKEN || !VERIFY_NAME){ showErr('请先填写域名，再点上方按钮取得 TXT 记录。'); return; }
     hideErr();
+    var domains = parseDomains($('domains').value);
+    if(!domains.length){ showErr('请先填写要签发的域名。'); return; }
     $('verify').disabled = true;
+    if(!TOKEN || !VERIFY_NAME){ await makeRecord(); }
     $('vstatus').textContent = '正在查询 DNS TXT 记录…';
     try{
       var txts = await queryTXT(VERIFY_NAME);
       var bare = TOKEN.split('=')[1];
       var hit = txts.some(function(v){ return v.indexOf(TOKEN) !== -1 || v.indexOf(bare) !== -1; });
       if(!hit){
-        $('vstatus').textContent = '未查询到匹配的 TXT 记录。可能还没生效，DNS 通常需要 1 到 10 分钟，稍后再点一次。';
+        $('vstatus').textContent = '未查询到匹配的 TXT 记录。请在 DNS 添加：类型 TXT，主机记录 ' + VERIFY_NAME + '，记录值 ' + TOKEN + '，等 1 到 10 分钟生效后再点一次。';
         $('verify').disabled = false;
         return;
       }
