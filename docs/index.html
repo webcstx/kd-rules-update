@@ -277,7 +277,19 @@
       var bare = TOKEN.split('=')[1];
       var hit = txts.some(function(v){ return v.indexOf(TOKEN) !== -1 || v.indexOf(bare) !== -1; });
       if(!hit){
-        $('vstatus').textContent = '未查询到匹配的 TXT 记录。请在 DNS 添加：类型 TXT，主机记录 ' + VERIFY_NAME + '，记录值 ' + TOKEN + '，等 1 到 10 分钟生效后再点一次。';
+        var extra = '';
+        try{
+          var atBase = await queryTXT(VERIFY_BASE);
+          if(atBase.length){
+            var sameName = atBase.some(function(v){ return v === bare || v.indexOf('webcat-verify') !== -1; });
+            if(sameName){
+              extra = ' 检测到验证值写在了 ' + VERIFY_BASE + ' 上，主机记录要改成 ' + VERIFY_NAME + '。';
+            }else{
+              extra = ' 另外检测到 ' + VERIFY_BASE + ' 上有一条 TXT：' + atBase.slice(0, 2).join('、') + '。如果这是你想指向别处的目标，类型选错了：它应当是 CNAME 记录，而不是 TXT。TXT 会占用这个名字，导致 CNAME 加不进去、站点无法解析。';
+            }
+          }
+        }catch(e){}
+        $('vstatus').textContent = '未查询到 ' + VERIFY_NAME + ' 的 TXT 记录。请在 DNS 添加：类型 TXT，主机记录 ' + VERIFY_NAME + '，记录值 ' + TOKEN + '，等 1 到 10 分钟生效后再点一次。' + extra;
         $('verify').disabled = false;
         return;
       }
