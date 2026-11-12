@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SSL 证书分发 · webcat.bbroot.com</title>
+<title>自由签发 · SSL 证书分发</title>
 <style>
   :root{
     --bg:#0b1210; --card:#121c19; --line:#1f2d29; --fg:#e6f2ee;
@@ -48,9 +48,9 @@
 </head>
 <body>
 <div class="wrap">
-  <span class="tag">SSL · 自签证书分发</span>
-  <h1>证书分发</h1>
-  <p class="sub">填写域名与有效期，在本机浏览器直接生成证书与私钥，生成后立即可下载。签发机构标识为 <code>https://webcat.bbroot.com/分发证书</code>。</p>
+  <span class="tag">自由签发 · SSL 证书分发</span>
+  <h1>自由签发</h1>
+  <p class="sub">由本站自建的根证书（自由签发 CA）为你的域名签发证书，有效期可自定义。先在设备里安装一次根证书，之后签发的证书就会被系统信任。签发机构标识为 <code>https://webcat.bbroot.com/分发证书</code>。</p>
 
   <div class="card">
     <label>域名（多个用换行或逗号分隔）</label>
@@ -98,6 +98,18 @@
       <button class="ghost" id="mkrec2">重新生成记录</button>
     </div>
     <div class="hint" id="vstatus"></div>
+  </div>
+
+  <div class="card" id="cabox">
+    <label>根证书 · 自由签发 CA</label>
+    <div class="hint" id="ca_status">首次使用会在这台设备生成一张有效期 20 年的根证书，保存在本机浏览器里，重复使用同一张。</div>
+    <div class="kv"><span>根证书名称</span><span>CN=https://webcat.bbroot.com/分发证书, O=自由签发</span></div>
+    <div class="kv"><span>SHA-256 指纹</span><span id="ca_fp" style="word-break:break-all;text-align:right">—</span></div>
+    <div class="btnline" style="margin-top:12px">
+      <button class="ghost" id="dl_ca">下载根证书 rootCA.crt</button>
+      <button class="ghost" id="reset_ca">重置根证书</button>
+    </div>
+    <div class="hint">安装位置：安卓「设置 → 安全 → 加密与凭据 → 安装证书 → CA 证书」；Windows 选「受信任的根证书颁发机构」；iOS 用描述文件安装后到「关于本机 → 证书信任设置」里开启。</div>
   </div>
 
   <div class="card errbox" id="errbox"></div>
@@ -267,6 +279,58 @@
     });
   }
 
+  var CA_KEY = 'webcat_free_ca_key', CA_CERT = 'webcat_free_ca_crt';
+  var CA_DN_CN = 'https://webcat.bbroot.com/分发证书';
+  var CA_DN_O = '自由签发';
+
+  function buildCA(){
+    var U = forge.asn1.Type.UTF8;
+    var keys = forge.pki.rsa.generateKeyPair({bits:2048, e:0x10001});
+    var cert = forge.pki.createCertificate();
+    cert.publicKey = keys.publicKey;
+    cert.serialNumber = '01' + forge.util.bytesToHex(forge.random.getBytesSync(15)).toUpperCase();
+    var nb = new Date(); nb.setDate(nb.getDate()-1);
+    var na = new Date(); na.setFullYear(na.getFullYear()+20);
+    cert.validity.notBefore = nb;
+    cert.validity.notAfter = na;
+    cert.setSubject([{name:'commonName', value:CA_DN_CN, valueTagClass:U},
+                     {name:'organizationName', value:CA_DN_O, valueTagClass:U}]);
+    cert.setIssuer([{name:'commonName', value:CA_DN_CN, valueTagClass:U},
+                    {name:'organizationName', value:CA_DN_O, valueTagClass:U}]);
+    cert.setExtensions([
+      {name:'basicConstraints', cA:true, critical:true},
+      {name:'keyUsage', keyCertSign:true, cRLSign:true, critical:true},
+      {name:'subjectKeyIdentifier'}
+    ]);
+    cert.sign(keys.privateKey, forge.md.sha256.create());
+    var kp = forge.pki.privateKeyToPem(keys.privateKey);
+    var cp = forge.pki.certificateToPem(cert);
+    try{ localStorage.setItem(CA_KEY, kp); localStorage.setItem(CA_CERT, cp); }catch(e){}
+    return {key:keys.privateKey, cert:cert};
+  }
+
+  function ensureCA(){
+    var k=null, c=null;
+    try{ k = localStorage.getItem(CA_KEY); c = localStorage.getItem(CA_CERT); }catch(e){}
+    if(k && c){
+      try{ return {key:forge.pki.privateKeyFromPem(k), cert:forge.pki.certificateFromPem(c)}; }catch(e){}
+    }
+    return buildCA();
+  }
+
+  function caFingerprint(cert){
+    var md = forge.md.sha256.create();
+    md.update(forge.pki.certificateToPem(cert));
+    return md.digest().toHex().toUpperCase().match(/.{2}/g).join(':');
+  }
+
+  function refreshCA(){
+    var ca;
+    try{ ca = ensureCA(); }catch(e){ return; }
+    $('ca_fp').textContent = caFingerprint(ca.cert);
+    $('ca_status').textContent = '根证书已就绪（有效期 20 年）。装进系统后，本站签发的证书就会被信任。';
+  }
+
   function issue(){
     hideErr();
     $('outbox').style.display='none';
@@ -291,14 +355,11 @@
         var serial = forge.util.bytesToHex(forge.random.getBytesSync(18)).toUpperCase();
 
         var U = forge.asn1.Type.UTF8;
-        var dnIssuer = [
-          {name:'commonName', value: ISSUER, valueTagClass: U},
-          {name:'organizationName', value:'webcat.bbroot.com'}
-        ];
+        var ca = ensureCA();
         var raw = domains[0];
         var dnSubject = [
           {name:'commonName', value: raw, valueTagClass: U},
-          {name:'organizationName', value:'webcat.bbroot.com'}
+          {name:'organizationName', value: '自由签发', valueTagClass: U}
         ];
 
         var cert = forge.pki.createCertificate();
@@ -307,7 +368,7 @@
         cert.validity.notBefore = notBefore;
         cert.validity.notAfter = notAfter;
         cert.setSubject(dnSubject);
-        cert.setIssuer(dnIssuer);
+        cert.setIssuer(ca.cert.subject.attributes);
 
         var altNames = domains.map(function(d){
           return isIP(d) ? {type:7, ip:d} : {type:2, value:d};
@@ -317,11 +378,10 @@
           {name:'keyUsage', digitalSignature:true, keyEncipherment:true, critical:true},
           {name:'extKeyUsage', serverAuth:true},
           {name:'subjectAltName', altNames:altNames},
-          {name:'subjectKeyIdentifier'},
-          {name:'authorityKeyIdentifier'}
+          {name:'subjectKeyIdentifier'}
         ]);
 
-        cert.sign(keys.privateKey, forge.md.sha256.create());
+        cert.sign(ca.key, forge.md.sha256.create());
 
         LAST = {privateKey: keys.privateKey, cert: cert};
         var certPem = forge.pki.certificateToPem(cert);
@@ -350,6 +410,18 @@
   $('go').addEventListener('click', makeRecord);
   $('mkrec2').addEventListener('click', makeRecord);
   $('verify').addEventListener('click', verifyAndIssue);
+  $('dl_ca').addEventListener('click', function(){
+    var ca = ensureCA();
+    download('rootCA.crt', forge.pki.certificateToPem(ca.cert), 'application/x-x509-ca-cert');
+    setStatus('已下载根证书 rootCA.crt，请在设备里安装。');
+  });
+  $('reset_ca').addEventListener('click', function(){
+    if(!confirm('重置后旧证书仍可用，但新证书要用新的根证书才能被信任。确定重置？')) return;
+    try{ localStorage.removeItem(CA_KEY); localStorage.removeItem(CA_CERT); }catch(e){}
+    refreshCA();
+    setStatus('已重置根证书。');
+  });
+  setTimeout(refreshCA, 50);
   $('dl_cert').addEventListener('click', function(){ download('cert.pem', $('cert').value); });
   $('dl_key').addEventListener('click', function(){ download('key.pem', $('key').value); });
   $('dl_p12').addEventListener('click', function(){
