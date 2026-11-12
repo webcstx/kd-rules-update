@@ -3,163 +3,446 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>应用广告拦截 · GKD 订阅</title>
-<meta name="description" content="GKD 安卓广告拦截订阅，开屏广告自动跳过，精准不误触。">
+<title>自由签发 · SSL 证书分发</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-:root{
-  --bg:#0d1117;--card:#161b22;--card2:#1c222b;--line:#2a313c;
-  --txt:#e6edf3;--dim:#9aa5b1;--accent:#149e8a;--accent2:#0f7a6a;
-}
-body{
-  background:radial-gradient(1200px 600px at 50% -10%,#123a35 0%,transparent 60%),var(--bg);
-  color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
-  line-height:1.65;padding:28px 18px 60px;min-height:100vh;
-}
-.wrap{max-width:680px;margin:0 auto}
-.badge{
-  display:inline-block;font-size:12px;letter-spacing:.5px;color:#7fe0cf;
-  border:1px solid rgba(20,158,138,.45);background:rgba(20,158,138,.1);
-  padding:4px 10px;border-radius:999px;margin-bottom:14px
-}
-h1{font-size:26px;line-height:1.3;margin-bottom:8px;letter-spacing:.5px}
-.sub{color:var(--dim);font-size:14px;margin-bottom:26px}
-.card{
-  background:var(--card);border:1px solid var(--line);border-radius:14px;
-  padding:18px 16px;margin-bottom:16px
-}
-.card h2{font-size:15px;margin-bottom:12px;color:#c9d4e0;font-weight:600}
-.urlbox{
-  display:flex;gap:8px;align-items:stretch;
-  background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:10px 12px
-}
-.url{
-  flex:1;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;
-  color:#8fe6d8;word-break:break-all;line-height:1.5;align-self:center
-}
-.copy{
-  flex:none;background:var(--accent);color:#fff;border:0;border-radius:8px;
-  padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap
-}
-.copy:active{background:var(--accent2)}
-.copy.done{background:#2e7d32}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
-.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 10px;text-align:center}
-.stat b{display:block;font-size:20px;color:#7fe0cf;font-weight:700}
-.stat span{font-size:12px;color:var(--dim)}
-ol{list-style:none;counter-reset:s}
-ol li{
-  counter-increment:s;position:relative;padding-left:34px;margin-bottom:14px;font-size:14px;color:#cfd8e3
-}
-ol li::before{
-  content:counter(s);position:absolute;left:0;top:0;width:24px;height:24px;border-radius:50%;
-  background:rgba(20,158,138,.15);border:1px solid rgba(20,158,138,.5);color:#7fe0cf;
-  display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700
-}
-ol li:last-child{margin-bottom:0}
-ol em{font-style:normal;color:#8fe6d8}
-.tags{display:flex;flex-wrap:wrap;gap:8px}
-.tag{font-size:12px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);color:var(--dim)}
-.tag.on{border-color:rgba(20,158,138,.5);color:#7fe0cf;background:rgba(20,158,138,.08)}
-.note{font-size:12.5px;color:var(--dim);margin-top:10px;line-height:1.7}
-footer{margin-top:26px;text-align:center;font-size:12.5px;color:#6b7684}
-footer a{color:#7fe0cf;text-decoration:none}
-.alt{margin-top:10px;font-size:12px;color:var(--dim)}
+  :root{
+    --bg:#0b1210; --card:#121c19; --line:#1f2d29; --fg:#e6f2ee;
+    --dim:#8aa39b; --acc:#3ddc97; --warn:#ffb547; --err:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:linear-gradient(180deg,#0b1210 0%,#0a1512 100%);
+    color:var(--fg); font:15px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans SC",sans-serif;
+    padding:28px 18px 60px;
+  }
+  .wrap{max-width:760px;margin:0 auto}
+  .tag{display:inline-block;font-size:12px;color:var(--acc);border:1px solid rgba(61,220,151,.35);
+    border-radius:999px;padding:3px 10px;margin-bottom:14px}
+  h1{font-size:26px;margin:0 0 8px;font-weight:700;letter-spacing:.5px}
+  .sub{color:var(--dim);font-size:13.5px;margin:0 0 22px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+  label{display:block;font-size:13px;color:var(--acc);margin-bottom:6px}
+  input,select,textarea{width:100%;background:#0a1412;border:1px solid var(--line);color:var(--fg);
+    border-radius:10px;padding:11px 12px;font-size:14px;font-family:inherit;outline:none}
+  input:focus,select:focus{border-color:rgba(61,220,151,.55)}
+  textarea{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.5;height:150px;resize:vertical}
+  .row{display:flex;gap:12px}
+  .row>div{flex:1}
+  .hint{color:var(--dim);font-size:12px;margin-top:6px}
+  button{background:var(--acc);color:#062018;border:0;border-radius:10px;padding:12px 18px;
+    font-size:15px;font-weight:700;cursor:pointer;width:100%}
+  button:disabled{opacity:.55;cursor:not-allowed}
+  .ghost{background:transparent;border:1px solid var(--line);color:var(--fg);font-weight:600;font-size:13px;padding:9px 12px;width:auto}
+  .out{display:none}
+  .ok{color:var(--acc);font-weight:700}
+  .kv{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:7px 0;border-bottom:1px dashed var(--line)}
+  .kv:last-child{border-bottom:0}
+  .kv span:first-child{color:var(--dim)}
+  .warnbox{background:rgba(255,181,71,.08);border:1px solid rgba(255,181,71,.35);border-radius:12px;padding:14px;font-size:13.5px;line-height:1.7}
+  .warnbox b{color:var(--warn)}
+  .errbox{background:rgba(255,107,107,.08);border:1px solid rgba(255,107,107,.35);border-radius:12px;padding:14px;font-size:13.5px;display:none}
+  .btnline{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap}
+  footer{color:var(--dim);font-size:12px;text-align:center;margin-top:26px}
+  a{color:var(--acc);text-decoration:none}
 </style>
 </head>
 <body>
 <div class="wrap">
-
-  <span class="badge">GKD · 安卓广告拦截订阅</span>
-  <h1>应用广告拦截</h1>
-  <p class="sub">开屏广告自动跳过，毫秒级响应，精准不误触。复制下方地址，在 GKD 里添加订阅即可。</p>
+  <span class="tag">自由签发 · SSL 证书分发</span>
+  <h1>自由签发</h1>
+  <p class="sub">由本站自建的根证书（自由签发 CA）为你的域名签发证书，有效期可自定义。先在设备里安装一次根证书，之后签发的证书就会被系统信任。签发机构标识为 <code>https://webcat.bbroot.com/分发证书</code>。</p>
 
   <div class="card">
-    <h2>订阅地址</h2>
-    <div class="urlbox">
-      <span class="url" id="subUrl">https://webcat.bbroot.com/GKD-subscription.json3</span>
-      <button class="copy" id="copyBtn" onclick="copyUrl()">复制</button>
+    <label>域名（多个用换行或逗号分隔）</label>
+    <input id="domains" value="" placeholder="填写你的域名，例如 example.com">
+    <div class="hint">支持通配符（如 *.bbroot.com）与 IP 地址，会自动写入证书的 SAN 扩展。</div>
+
+    <div class="row" style="margin-top:16px">
+      <div>
+        <label>有效时长</label>
+        <div style="display:flex;gap:10px">
+          <input id="amount" type="number" min="1" step="1" value="90" style="flex:1">
+          <select id="unit" style="width:118px;flex:0 0 118px">
+            <option value="day" selected>天</option>
+            <option value="month">个月</option>
+            <option value="year">年</option>
+          </select>
+        </div>
+        <div class="hint">先填数字再选单位，天、月、年都可以，例如 30、90、180、365。</div>
+      </div>
+      <div>
+        <label>密钥长度</label>
+        <select id="bits">
+          <option value="2048" selected>RSA 2048（推荐，生成快）</option>
+          <option value="4096">RSA 4096（更慢，强度更高）</option>
+        </select>
+        <div class="hint">浏览器本地生成，2048 位一般需要 1 到 3 秒。</div>
+      </div>
     </div>
-    <p class="alt">备用加速地址：<br>https://github.com/webcstx/kd-rules-update/releases/download/v3.0.1/GKD-subscription.json3</p>
+
+    <div style="margin-top:18px"><button id="go">生成验证记录</button></div>
+    <div class="hint" id="status"></div>
   </div>
 
-  <div class="stats">
-    <div class="stat"><b>407</b><span>版本号</span></div>
-    <div class="stat"><b>886</b><span>适配应用</span></div>
-    <div class="stat"><b>11</b><span>规则分类</span></div>
-  </div>
-
-  <div class="card">
-    <h2>三种使用方式</h2>
-    <ol>
-      <li>在 GKD 首页点右上角 <em>+</em>，选择「添加订阅」。</li>
-      <li>粘贴上方订阅地址，点确定，等待解析完成。</li>
-      <li>进入「全局规则」，按需打开 <em>开屏广告-全局</em>；权限拦截类默认关闭，需要时再手动开。</li>
-    </ol>
-  </div>
-
-  <div class="card">
-    <h2>规则分类</h2>
-    <div class="tags">
-      <span class="tag on">开屏广告 启用</span>
-      <span class="tag">青少年模式</span>
-      <span class="tag">更新提示</span>
-      <span class="tag">评价提示</span>
-      <span class="tag">通知提示</span>
-      <span class="tag">权限提示</span>
-      <span class="tag">局部广告</span>
-      <span class="tag">全屏广告</span>
-      <span class="tag">分段广告</span>
-      <span class="tag">功能类</span>
-      <span class="tag">其他</span>
+  <div class="card" id="vbox">
+    <label>第 2 步 · 域名归属验证</label>
+    <div class="hint">签发前必须先到你的 DNS 面板添加一条 TXT 记录，用来证明这个域名归你所有。记录生效后才能签发。</div>
+    <div id="vrecord" style="display:none;margin-top:12px">
+      <div class="kv"><span>记录类型</span><span>TXT</span></div>
+      <div class="kv"><span>主机记录</span><span id="v_name" style="word-break:break-all;text-align:right"></span></div>
+      <div class="kv"><span>记录值</span><span id="v_value" style="word-break:break-all;text-align:right"></span></div>
+      <div class="kv"><span>TTL</span><span>600（10 分钟）</span></div>
     </div>
-    <p class="note">默认只启用开屏广告，其余分类为避免误触一律关闭，需要哪一类自己在 GKD 里打开即可。</p>
-  </div>
-
-  <div class="card">
-    <h2>SSL 证书分发</h2>
-    <p class="note">填写域名与有效时长（天 / 个月 / 年都能填），先在 DNS 添加一条 TXT 记录证明域名归属，验证通过后即可签发，完成后直接显示生效与失效时间。</p>
-    <div class="urlbox">
-      <span class="url">https://webcat.bbroot.com/分发证书/</span>
-      <button class="copy" onclick="location.href='/%E5%88%86%E5%8F%91%E8%AF%81%E4%B9%A6/'">打开</button>
+    <div class="btnline" style="margin-top:14px">
+      <button class="ghost" id="verify" disabled>验证并签发</button>
+      <button class="ghost" id="mkrec2">重新生成记录</button>
     </div>
-    <p class="alt">签发机构标识：https://webcat.bbroot.com/分发证书<br>证书与私钥全部在浏览器本地生成，不上传服务器。</p>
+    <div class="hint" id="vstatus"></div>
   </div>
 
-  <div class="card">
-    <h2>常见问题</h2>
-    <p class="note">
-      <b>添加时提示下载失败</b>：多为网络问题，改用上方备用加速地址。<br>
-      <b>规则没生效</b>：确认 GKD 已开启无障碍权限，且对应规则组是打开状态。<br>
-      <b>更新订阅后没变化</b>：删掉旧订阅重新添加，比点更新更稳。
-    </p>
+  <div class="card" id="cabox">
+    <label>根证书 · 自由签发 CA</label>
+    <div class="hint" id="ca_status">首次使用会在这台设备生成一张有效期 20 年的根证书，保存在本机浏览器里，重复使用同一张。</div>
+    <div class="kv"><span>根证书名称</span><span>CN=https://webcat.bbroot.com/分发证书, O=自由签发</span></div>
+    <div class="kv"><span>SHA-256 指纹</span><span id="ca_fp" style="word-break:break-all;text-align:right">—</span></div>
+    <div class="btnline" style="margin-top:12px">
+      <button class="ghost" id="dl_ca">下载根证书 rootCA.crt</button>
+      <button class="ghost" id="reset_ca">重置根证书</button>
+    </div>
+    <div class="hint">安装位置：安卓「设置 → 安全 → 加密与凭据 → 安装证书 → CA 证书」；Windows 选「受信任的根证书颁发机构」；iOS 用描述文件安装后到「关于本机 → 证书信任设置」里开启。</div>
   </div>
 
-  <footer>
-    作者 webcatx · <a href="https://webcat.bbroot.com/" target="_blank" rel="noopener">GitHub 仓库</a>
-  </footer>
+  <div class="card errbox" id="errbox"></div>
 
+  <div class="card out" id="outbox">
+    <div class="kv"><span>状态</span><span class="ok">签发成功</span></div>
+    <div class="kv"><span>域名</span><span id="o_domains"></span></div>
+    <div class="kv"><span>签发机构</span><span id="o_issuer"></span></div>
+    <div class="kv"><span>生效时间</span><span id="o_from"></span></div>
+    <div class="kv"><span>失效时间</span><span id="o_to"></span></div>
+    <div class="kv"><span>密钥</span><span id="o_bits"></span></div>
+    <div class="kv"><span>SHA-256 指纹</span><span id="o_fp" style="word-break:break-all;text-align:right"></span></div>
+
+    <div style="margin-top:16px">
+      <label>证书（cert.pem）</label>
+      <textarea id="cert" readonly></textarea>
+      <div class="btnline">
+        <button class="ghost" id="dl_cert">下载 cert.pem</button>
+        <button class="ghost" id="cp_cert">复制证书</button>
+      </div>
+    </div>
+
+    <div style="margin-top:16px">
+      <label>私钥（key.pem，务必自行保管）</label>
+      <textarea id="key" readonly></textarea>
+      <div class="btnline">
+        <button class="ghost" id="dl_key">下载 key.pem</button>
+        <button class="ghost" id="cp_key">复制私钥</button>
+      </div>
+    </div>
+
+    <div style="margin-top:16px">
+      <label>加密导出（PKCS#12 容器，推荐用于传输）</label>
+      <div style="display:flex;gap:10px;align-items:center">
+        <input id="p12pass" type="password" placeholder="设置导出口令（至少 6 位）" style="flex:1">
+        <button class="ghost" id="dl_p12">导出 .p12</button>
+      </div>
+      <div class="hint">容器内同时包含证书与私钥，必须用口令才能打开；传输走 HTTPS 或离线拷贝，不要明文发私钥。</div>
+    </div>
+  </div>
+
+  <div class="card warnbox">
+    <b>使用前必读</b><br>
+    这是<b>自签名证书</b>，签发者与持有者是同一个主体，不属于公共 CA，浏览器与手机不会把它认作“安全连接”，打开站点仍会提示不受信任。<br>
+    适用范围：内网服务、测试环境、需要固定长有效期的内部系统。<br>
+    公网对外站点若要不报警告，必须使用公共 CA 签发的证书，例如 Let's Encrypt（固定 90 天，无法自定义时长）。<br>
+    私钥在本机生成、不会上传到任何服务器；关闭页面即清除。导出优先用上面的加密 .p12，不要复制明文私钥外发。
+  </div>
+
+  <footer>webcat.bbroot.com · 证书分发页面 · 生成过程完全在本地浏览器完成</footer>
 </div>
 
+<script src="forge.min.js"></script>
 <script>
-function copyUrl(){
-  var t = document.getElementById('subUrl').innerText.trim();
-  var b = document.getElementById('copyBtn');
-  var ok = function(){
-    b.innerText = '已复制'; b.classList.add('done');
-    setTimeout(function(){ b.innerText='复制'; b.classList.remove('done'); }, 1600);
-  };
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(t).then(ok).catch(fallback);
-  } else { fallback(); }
-  function fallback(){
-    var ta = document.createElement('textarea');
-    ta.value = t; ta.style.position='fixed'; ta.style.opacity='0';
-    document.body.appendChild(ta); ta.select();
-    try { document.execCommand('copy'); ok(); } catch(e){}
-    document.body.removeChild(ta);
+(function(){
+  var ISSUER = 'https://webcat.bbroot.com/分发证书';
+  var $ = function(id){ return document.getElementById(id); };
+
+  function parseDomains(v){
+    return v.split(/[,\n，、]+/).map(function(s){ return s.trim(); }).filter(Boolean);
   }
-}
+  function isIP(s){
+    return /^(\d{1,3}\.){3}\d{1,3}$/.test(s);
+  }
+  function pad(n){ return n<10 ? '0'+n : ''+n; }
+  function fmt(d){
+    return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+
+           pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());
+  }
+  function addSpan(base, amount, unit){
+    var d = new Date(base.getTime());
+    if(unit === 'day'){ d.setDate(d.getDate()+amount); }
+    else if(unit === 'year'){ d.setFullYear(d.getFullYear()+amount); }
+    else { d.setMonth(d.getMonth()+amount); }
+    return d;
+  }
+  function unitLabel(unit){
+    return unit==='day' ? '天' : (unit==='year' ? '年' : '个月');
+  }
+
+  function setStatus(t){ $('status').textContent = t || ''; }
+  function showErr(t){
+    var b = $('errbox');
+    b.textContent = t;
+    b.style.display = 'block';
+  }
+  function hideErr(){ $('errbox').style.display='none'; }
+
+  var LAST = null;
+  function downloadBytes(name, bytes, mime){
+    var u8 = new Uint8Array(bytes.length);
+    for(var i=0;i<bytes.length;i++){ u8[i] = bytes.charCodeAt(i); }
+    var blob = new Blob([u8], {type: mime});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 800);
+  }
+
+  function download(name, text, mime){
+    var blob = new Blob([text], {type: mime || 'application/x-pem-file'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 800);
+  }
+
+  function sha256hex(str){
+    var md = forge.md.sha256.create();
+    md.update(str);
+    return md.digest().toHex().toUpperCase().replace(/(.{2})/g, '$1:').replace(/:$/, '');
+  }
+
+  var TOKEN = null, VERIFY_NAME = null, VERIFY_BASE = null;
+
+  function makeRecord(){
+    hideErr();
+    $('outbox').style.display='none';
+    var domains = parseDomains($('domains').value);
+    if(!domains.length){ showErr('请至少填写一个域名。'); return; }
+    var base = domains[0].replace(/^\*\./, '');
+    VERIFY_BASE = base;
+    VERIFY_NAME = '_webcat-verify.' + base;
+    TOKEN = 'webcat-verify=' + forge.util.bytesToHex(forge.random.getBytesSync(14));
+    $('v_name').textContent = VERIFY_NAME;
+    $('v_value').textContent = TOKEN;
+    $('vrecord').style.display = 'block';
+    $('verify').disabled = false;
+    $('vstatus').textContent = '记录已生成，请到 DNS 面板添加这条 TXT，保存后点「验证并签发」。';
+    setStatus('');
+    $('go').disabled = false;
+  }
+
+  function queryTXT(name){
+    var url = 'https://dns.alidns.com/resolve?name=' + encodeURIComponent(name) + '&type=TXT';
+    return fetch(url, {cache:'no-store'})
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        if(!j.Answer) return [];
+        return j.Answer.filter(function(a){ return a.type === 16; })
+          .map(function(a){ return String(a.data).replace(/^"|"$/g, '').replace(/\\"/g,'"'); });
+      });
+  }
+
+  function verifyAndIssue(){
+    if(!TOKEN || !VERIFY_NAME){ showErr('请先生成验证记录。'); return; }
+    hideErr();
+    $('verify').disabled = true;
+    $('vstatus').textContent = '正在查询 DNS TXT 记录…';
+    queryTXT(VERIFY_NAME).then(function(list){
+      var hit = list.some(function(v){ return v.indexOf(TOKEN) !== -1 || v.indexOf(TOKEN.split('=')[1]) !== -1; });
+      if(!hit){
+        $('vstatus').textContent = '未检测到匹配的 TXT 记录。可能还没生效，DNS 通常需要 1 到 10 分钟，稍后再点一次。';
+        $('verify').disabled = false;
+        return;
+      }
+      $('vstatus').textContent = '验证通过，正在签发…';
+      issue();
+    }).catch(function(e){
+      showErr('查询 DNS 失败：'+(e && e.message ? e.message : e)+'（可能是网络或跨域限制，请稍后重试）');
+      $('vstatus').textContent = '';
+      $('verify').disabled = false;
+    });
+  }
+
+  var CA_KEY = 'webcat_free_ca_key', CA_CERT = 'webcat_free_ca_crt';
+  var CA_DN_CN = 'https://webcat.bbroot.com/分发证书';
+  var CA_DN_O = '自由签发';
+
+  function buildCA(){
+    var U = forge.asn1.Type.UTF8;
+    var keys = forge.pki.rsa.generateKeyPair({bits:2048, e:0x10001});
+    var cert = forge.pki.createCertificate();
+    cert.publicKey = keys.publicKey;
+    cert.serialNumber = '01' + forge.util.bytesToHex(forge.random.getBytesSync(15)).toUpperCase();
+    var nb = new Date(); nb.setDate(nb.getDate()-1);
+    var na = new Date(); na.setFullYear(na.getFullYear()+20);
+    cert.validity.notBefore = nb;
+    cert.validity.notAfter = na;
+    cert.setSubject([{name:'commonName', value:CA_DN_CN, valueTagClass:U},
+                     {name:'organizationName', value:CA_DN_O, valueTagClass:U}]);
+    cert.setIssuer([{name:'commonName', value:CA_DN_CN, valueTagClass:U},
+                    {name:'organizationName', value:CA_DN_O, valueTagClass:U}]);
+    cert.setExtensions([
+      {name:'basicConstraints', cA:true, critical:true},
+      {name:'keyUsage', keyCertSign:true, cRLSign:true, critical:true},
+      {name:'subjectKeyIdentifier'}
+    ]);
+    cert.sign(keys.privateKey, forge.md.sha256.create());
+    var kp = forge.pki.privateKeyToPem(keys.privateKey);
+    var cp = forge.pki.certificateToPem(cert);
+    try{ localStorage.setItem(CA_KEY, kp); localStorage.setItem(CA_CERT, cp); }catch(e){}
+    return {key:keys.privateKey, cert:cert};
+  }
+
+  function ensureCA(){
+    var k=null, c=null;
+    try{ k = localStorage.getItem(CA_KEY); c = localStorage.getItem(CA_CERT); }catch(e){}
+    if(k && c){
+      try{ return {key:forge.pki.privateKeyFromPem(k), cert:forge.pki.certificateFromPem(c)}; }catch(e){}
+    }
+    return buildCA();
+  }
+
+  function caFingerprint(cert){
+    var md = forge.md.sha256.create();
+    md.update(forge.pki.certificateToPem(cert));
+    return md.digest().toHex().toUpperCase().match(/.{2}/g).join(':');
+  }
+
+  function refreshCA(){
+    var ca;
+    try{ ca = ensureCA(); }catch(e){ return; }
+    $('ca_fp').textContent = caFingerprint(ca.cert);
+    $('ca_status').textContent = '根证书已就绪（有效期 20 年）。装进系统后，本站签发的证书就会被信任。';
+  }
+
+  function issue(){
+    hideErr();
+    $('outbox').style.display='none';
+    var domains = parseDomains($('domains').value);
+    if(!domains.length){ showErr('请至少填写一个域名。'); return; }
+    var amount = parseInt($('amount').value, 10);
+    var unit = $('unit').value;
+    var bits = parseInt($('bits').value, 10);
+    if(!(amount >= 1)){ showErr('有效时长必须是大于 0 的整数。'); return; }
+    if(unit === 'year' && amount > 100){ showErr('年数过大，请填 100 以内。'); return; }
+
+    $('go').disabled = true;
+    setStatus('正在生成 RSA 私钥（'+bits+' 位），请稍候…');
+
+    setTimeout(async function(){
+      try{
+        var keys = forge.pki.rsa.generateKeyPair({bits: bits, e: 0x10001});
+
+        var notBefore = new Date();
+        notBefore.setDate(notBefore.getDate()-1);
+        var notAfter = addSpan(new Date(), amount, unit);
+        var serial = forge.util.bytesToHex(forge.random.getBytesSync(18)).toUpperCase();
+
+        var U = forge.asn1.Type.UTF8;
+        var ca = ensureCA();
+        var raw = domains[0];
+        var dnSubject = [
+          {name:'commonName', value: raw, valueTagClass: U},
+          {name:'organizationName', value: '自由签发', valueTagClass: U}
+        ];
+
+        var cert = forge.pki.createCertificate();
+        cert.publicKey = keys.publicKey;
+        cert.serialNumber = serial;
+        cert.validity.notBefore = notBefore;
+        cert.validity.notAfter = notAfter;
+        cert.setSubject(dnSubject);
+        cert.setIssuer(ca.cert.subject.attributes);
+
+        var altNames = domains.map(function(d){
+          return isIP(d) ? {type:7, ip:d} : {type:2, value:d};
+        });
+        cert.setExtensions([
+          {name:'basicConstraints', cA:false},
+          {name:'keyUsage', digitalSignature:true, keyEncipherment:true, critical:true},
+          {name:'extKeyUsage', serverAuth:true},
+          {name:'subjectAltName', altNames:altNames},
+          {name:'subjectKeyIdentifier'}
+        ]);
+
+        cert.sign(ca.key, forge.md.sha256.create());
+
+        LAST = {privateKey: keys.privateKey, cert: cert};
+        var certPem = forge.pki.certificateToPem(cert);
+        var keyPem = forge.pki.privateKeyToPem(keys.privateKey);
+
+        $('cert').value = certPem;
+        $('key').value = keyPem;
+        $('o_domains').textContent = domains.join(', ');
+        $('o_issuer').textContent = ISSUER;
+        $('o_from').textContent = fmt(notBefore);
+        $('o_to').textContent = fmt(notAfter) + '（'+amount+' '+unitLabel(unit)+'）';
+        $('o_bits').textContent = 'RSA '+bits;
+        $('o_fp').textContent = sha256hex(certPem);
+        $('outbox').style.display = 'block';
+        setStatus('签发完成，已生成证书与私钥。');
+        $('outbox').scrollIntoView({behavior:'smooth', block:'start'});
+      }catch(e){
+        showErr('生成失败：'+(e && e.message ? e.message : e));
+        setStatus('');
+      }finally{
+        $('go').disabled = false;
+      }
+    }, 30);
+  }
+
+  $('go').addEventListener('click', makeRecord);
+  $('mkrec2').addEventListener('click', makeRecord);
+  $('verify').addEventListener('click', verifyAndIssue);
+  $('dl_ca').addEventListener('click', function(){
+    var ca = ensureCA();
+    download('rootCA.crt', forge.pki.certificateToPem(ca.cert), 'application/x-x509-ca-cert');
+    setStatus('已下载根证书 rootCA.crt，请在设备里安装。');
+  });
+  $('reset_ca').addEventListener('click', function(){
+    if(!confirm('重置后旧证书仍可用，但新证书要用新的根证书才能被信任。确定重置？')) return;
+    try{ localStorage.removeItem(CA_KEY); localStorage.removeItem(CA_CERT); }catch(e){}
+    refreshCA();
+    setStatus('已重置根证书。');
+  });
+  setTimeout(refreshCA, 50);
+  $('dl_cert').addEventListener('click', function(){ download('cert.pem', $('cert').value); });
+  $('dl_key').addEventListener('click', function(){ download('key.pem', $('key').value); });
+  $('dl_p12').addEventListener('click', function(){
+    if(!LAST){ showErr('请先签发证书。'); return; }
+    var pass = $('p12pass').value || '';
+    if(pass.length < 6){ showErr('导出口令至少 6 位。'); return; }
+    try{
+      var p12 = forge.pkcs12.toPkcs12Asn1(LAST.privateKey, [LAST.cert], pass, {algorithm:'3des'});
+      downloadBytes('webcat.p12', forge.asn1.toDer(p12).getBytes(), 'application/x-pkcs12');
+      setStatus('已导出加密容器 webcat.p12，请记好口令。');
+    }catch(e){
+      showErr('导出失败：'+(e && e.message ? e.message : e));
+    }
+  });
+  $('cp_cert').addEventListener('click', function(){
+    navigator.clipboard.writeText($('cert').value).then(function(){ setStatus('证书已复制'); });
+  });
+  $('cp_key').addEventListener('click', function(){
+    navigator.clipboard.writeText($('key').value).then(function(){ setStatus('私钥已复制'); });
+  });
+})();
 </script>
 </body>
 </html>

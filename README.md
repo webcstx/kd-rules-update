@@ -1,51 +1,39 @@
-# 应用广告拦截
+# 自由签发 SSL 证书分发
 
-GKD 安卓广告拦截订阅，毫秒级响应，精准不误触。
+为你的域名签发 SSL 证书，有效期可自定义，证书与私钥全程在浏览器本地生成。
 
-## 订阅地址
-```
-https://webcat.bbroot.com/GKD-subscription.json3
-```
-
-## 当前版本
-- 版本号：407
-- 订阅 ID：777
-- 应用：886 个
-- 全局规则组：开屏广告、更新提示、青少年模式、启动所有权限禁止请求
+在线地址：https://webcat.bbroot.com/
 
 ## 功能
-- 开屏广告：自动跳过开屏广告
-- 更新提示：关闭应用更新弹窗
-- 青少年模式：关闭青少年模式弹窗
-- 启动所有权限禁止请求：自动拒绝权限请求弹窗（默认关闭，需手动开启）
-- 其余 7 类规则（评价提示、通知提示、权限提示、局部广告、全屏广告、分段广告、功能类、其他）默认关闭，按需在 GKD 内开启
 
-## 分类
-开屏广告 / 青少年模式 / 更新提示 / 评价提示 / 通知提示 / 权限提示 / 局部广告 / 全屏广告 / 分段广告 / 功能类 / 其他
-
-## 贡献
-欢迎提交规则补充和修复，查看 [贡献指南](https://github.com/webcstx/kd-rules-update/blob/main/CONTRIBUTING.md)。
-
-
-## 自由签发 SSL 证书
-访问 [https://webcat.bbroot.com/分发证书/](https://webcat.bbroot.com/%E5%88%86%E5%8F%91%E8%AF%81%E4%B9%A6/) ，填写域名与有效时长，验证域名归属后即可签发。
-
-站点自建了一张根证书（自由签发 CA，组织字段 O=自由签发），装进设备信任列表后，用它签发的证书即被系统信任，有效期可自行设定。
-
-- 有效时长支持天、个月、年三种单位，任意填写，签发完成后直接显示生效与失效时间
-- 签发前需在 DNS 添加 TXT 记录 `_webcat-verify.你的域名`，验证通过才会签发
-- 证书与私钥全部在浏览器本地生成，不上传服务器
+- 填写域名，自动写入证书的 SAN 扩展，支持多个域名、通配符与 IP
+- 有效时长支持「天 / 个月 / 年」三种单位，任意填写，签发完成即显示生效与失效时间
+- 签发前需在 DNS 添加一条 TXT 记录 `_webcat-verify.你的域名`，验证域名归属后才签发
 - 支持用口令导出加密的 PKCS#12 容器（`.p12`），内含证书与私钥，适合加密传输
-- 签发的是自签证书，浏览器不会信任，仅适合内网、测试与内部系统；公网免警告必须使用公共 CA 证书
+- 证书与私钥不上传任何服务器，关闭页面即清除
 
-## Star History
-<a href="https://star-history.com/#webcstx/kd-rules-update&Date">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=webcstx/kd-rules-update&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=webcstx/kd-rules-update&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=webcstx/kd-rules-update&type=Date" />
- </picture>
-</a>
+## 信任机制
+
+站点自建一张根证书（自由签发 CA：`CN=https://webcat.bbroot.com/分发证书, O=自由签发`，有效期 20 年），由其签发站点证书。
+
+- 把 `rootCA.crt` 装进设备信任列表后，本站签发的证书即被系统信任，有效期不受公共 CA 限制
+- 安卓：设置 → 安全 → 加密与凭据 → 安装证书 → CA 证书
+- Windows：双击导入，证书存储选「受信任的根证书颁发机构」
+- iOS：用描述文件安装，再到「关于本机 → 证书信任设置」开启完全信任
+
+注意：自建根证书只对装过它的设备生效；没装过的设备仍会提示证书不受信任。要让所有人默认信任，只能使用公共 CA 签发的证书，而公共 CA 的有效期不可自定义。
+
+## 使用方式
+
+1. 打开站点，填写域名与有效时长
+2. 点「生成验证记录」，按提示到 DNS 面板添加 TXT 记录
+3. 回来点「验证并签发」，等待 DNS 生效（通常 1 到 10 分钟）
+4. 签发成功后下载 `cert.pem` 与 `key.pem`，或用口令导出加密的 `.p12`
+
+## 许可证
+
+本项目采用 [Apache License 2.0](LICENSE)。
 
 ## 作者
+
 webcatx
