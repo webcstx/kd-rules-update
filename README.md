@@ -27,8 +27,10 @@ https://webcat.bbroot.com/GKD-subscription.json3
 欢迎提交规则补充和修复，查看 [贡献指南](https://github.com/webcstx/kd-rules-update/blob/main/CONTRIBUTING.md)。
 
 
-## SSL 证书分发
+## 自由签发 SSL 证书
 访问 [https://webcat.bbroot.com/分发证书/](https://webcat.bbroot.com/%E5%88%86%E5%8F%91%E8%AF%81%E4%B9%A6/) ，填写域名与有效时长，验证域名归属后即可签发。
+
+站点自建了一张根证书（自由签发 CA，组织字段 O=自由签发），装进设备信任列表后，用它签发的证书即被系统信任，有效期可自行设定。
 
 - 有效时长支持天、个月、年三种单位，任意填写，签发完成后直接显示生效与失效时间
 - 签发前需在 DNS 添加 TXT 记录 `_webcat-verify.你的域名`，验证通过才会签发
