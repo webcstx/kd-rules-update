@@ -81,13 +81,13 @@
       </div>
     </div>
 
-    <div style="margin-top:18px"><button id="go">生成 TXT 验证记录</button></div>
+    <div style="margin-top:18px"><button id="go">获取 TXT 验证记录</button></div>
     <div class="hint" id="status"></div>
   </div>
 
   <div class="card" id="vbox">
     <label>第 2 步 · 域名验证</label>
-    <div class="hint">先在 DNS 添加一条 TXT 记录验证域名归属，签发前会查询这条 TXT，查到才允许签发。CAA 记录是可选的额外限制。</div>
+    <div class="hint">先在 DNS 添加一条 TXT 记录验证域名归属，签发前会查询这条 TXT，查到才允许签发。记录值由域名固定推导，不会重新生成。</div>
 
     <div id="vrecord" style="display:none;margin-top:14px">
       <label>TXT 记录（必填 · 验证域名归属）</label>
@@ -97,26 +97,11 @@
       <div class="btnline">
         <button class="ghost" id="cp_txt">复制 TXT 记录值</button>
       </div>
-      <div class="hint">主机记录填完整的 <b>_webcat-verify.你的域名</b>，记录值整串复制，不要改动。DNS 生效通常需要 1 到 10 分钟。</div>
+      <div class="hint">主机记录填完整的 <b>_webcat-verify.你的域名</b>，记录值整串复制，不要改动。这条记录是<b>固定值</b>：同一个域名每次打开看到的都一样，不能重新生成。DNS 生效通常需要 1 到 10 分钟。</div>
     </div>
 
-    <div id="caabox" style="display:none;margin-top:14px">
-      <label>CAA 记录（可选 · 限制可签发的 CA）</label>
-      <div class="kv"><span>类型</span><span>CAA</span></div>
-      <div class="kv"><span>主机记录</span><span id="caa_host" style="word-break:break-all;text-align:right">@</span></div>
-      <div class="kv"><span>记录值</span><span id="caa_val" style="word-break:break-word;text-align:right">0 issue "webcat.bbroot.com"</span></div>
-      <div class="kv"><span>CAA 检查</span><span id="caa_res">等待验证</span></div>
-      <div class="btnline">
-        <button class="ghost" id="cp_caa">复制 CAA 记录值</button>
-      </div>
-      <div class="hint"><b>记录值里引号内的 webcat.bbroot.com 是本 CA 的标识（一个 CA 域名），不是你这次要签发的域名。</b>它必须是一个纯域名，不能带斜杠、路径或随机后缀；写错成 <code>xxx.com/abc123</code> 这类带路径的值属于非法 CAA。</div>
-      <div class="hint"><b>主机记录一定填根域的 @，不要填你的子域名。</b>如果你的域名本身是子域并且已经用 CNAME 指向别处，那条 CNAME 会独占这个名字，在该子域上同时加 CAA 会被面板拒绝（DNS 规则：CNAME 不能与其他记录共存）。CAA 加在根域后，子域会继承生效。</div>
-      <div class="hint">若面板把 CAA 拆成三栏填写：标记位（flags）填 <b>0</b>，标签（tag）填 <b>issue</b>，值（value）填 <b>webcat.bbroot.com</b>（不要带引号）。</div>
-      <div class="hint">通配域名再加一条：类型 CAA，主机记录 <b id="caa_host2">@</b>，记录值 <b id="caa_wild">0 issuewild "webcat.bbroot.com"</b>。<b>必须查询到上面这条已授权的 CAA 记录，才会签发；查不到记录一律不签发。如果不想限制 CA，直接不添加任何 CAA 记录即可（不是写 &quot;;&quot;）。</b></div>
-    </div>
     <div class="btnline" style="margin-top:14px">
       <button class="ghost" id="verify" disabled>验证并签发</button>
-      <button class="ghost" id="mkrec2">重新生成记录</button>
     </div>
     <div class="hint" id="vstatus"></div>
   </div>
@@ -251,17 +236,6 @@
 
   var VERIFY_BASE = null, VERIFY_NAME = null, TOKEN = null;
 
-  function queryCNAME(name){
-    var url = 'https://dns.alidns.com/resolve?name=' + encodeURIComponent(name) + '&type=CNAME';
-    return fetch(url, {cache:'no-store'}).then(function(r){ return r.json(); }).then(function(j){
-      var ans = j.Answer || [];
-      for(var i = 0; i < ans.length; i++){
-        if(ans[i].type === 5){ return String(ans[i].data).replace(/\.$/, ''); }
-      }
-      return null;
-    });
-  }
-
   async function makeRecord(){
     hideErr();
     $('outbox').style.display='none';
@@ -270,124 +244,34 @@
     var base = domains[0].replace(/^\*\./, '');
     VERIFY_BASE = base;
     VERIFY_NAME = '_webcat-verify.' + base;
-    TOKEN = 'webcat-verify=' + forge.util.bytesToHex(forge.random.getBytesSync(14));
+    TOKEN = 'webcat-verify=' + forge.md.sha256.create().update(base).digest().toHex().slice(0, 32);
     $('v_name').textContent = VERIFY_NAME;
     $('v_value').textContent = TOKEN;
     $('vrecord').style.display = 'block';
-    $('caabox').style.display = 'block';
-    var labels = base.split('.');
-    var zone = labels.length > 2 ? labels.slice(1).join('.') : base;
-    var cname = null;
-    try{
-      $('vstatus').textContent = '正在查询该域名的 CNAME 记录…';
-      cname = await queryCNAME(base);
-    }catch(e){}
-    var hostTxt, msg;
-    if(cname){
-      hostTxt = '@（根域 ' + zone + '）';
-      msg = '查询到 ' + base + ' 是 CNAME → ' + cname + '。CNAME 独占这个名字，CAA 不能加在 ' + labels[0] + '，必须加在根域 ' + zone + ' 的 @ 上，子域自动继承。';
-    }else if(base === zone){
-      hostTxt = '@（根域 ' + base + '）';
-      msg = '未查询到 CNAME。' + base + ' 是根域，CAA 的主机记录填 @。';
-    }else{
-      hostTxt = labels[0] + '（即 ' + base + '）';
-      msg = '未查询到 CNAME，这个名字没有被 CNAME 占用，CAA 直接加在 ' + labels[0] + '（即 ' + base + '）上即可。';
-    }
-    $('caa_host').textContent = hostTxt;
-    $('caa_host2').textContent = hostTxt;
-    $('vstatus').textContent = msg;
+    $('vstatus').textContent = '记录值由域名固定推导：同一个域名永远得到同一条记录，刷新页面也不会变，不能重新生成。添加后点「验证并签发」。';
     $('verify').disabled = false;
     setStatus('');
     $('go').disabled = false;
   }
 
-  var CA_ID = 'webcat.bbroot.com';
-
-  function queryCAA(name){
-    var url = 'https://dns.alidns.com/resolve?name=' + encodeURIComponent(name) + '&type=257';
-    return fetch(url, {cache:'no-store'})
-      .then(function(r){ return r.json(); })
-      .then(function(j){
-        if(!j.Answer) return [];
-        return j.Answer.filter(function(a){ return a.type === 257; }).map(function(a){ return String(a.data); });
-      });
-  }
-
-  function caaAllows(records, domain){
-    if(!records.length){ return {ok:true, reason:'该域名未设置 CAA，跳过 CAA 限制'}; }
-    var isWild = domain.indexOf('*.') === 0;
-    var issue = [], issuewild = [];
-    records.forEach(function(r){
-      var m = /^\s*\d+\s+(\w+)\s+"([^"]*)"\s*$/.exec(r);
-      if(!m) return;
-      var tag = m[1].toLowerCase(), val = m[2].trim();
-      if(tag === 'issue') issue.push(val);
-      if(tag === 'issuewild') issuewild.push(val);
-    });
-    var list = (isWild && issuewild.length) ? issuewild : issue;
-    if(!list.length){ return {ok:false, reason:'CAA 中未找到 issue 记录，未授权本 CA，不能签发'}; }
-    var hit = list.some(function(v){
-      var d = v.split(';')[0].trim().toLowerCase();
-      return d === CA_ID || d === 'www.' + CA_ID;
-    });
-    if(hit){ return {ok:true, reason:'CAA 已授权本 CA'}; }
-    var denyAll = list.every(function(v){ return v === ';'; });
-    return {ok:false, reason: denyAll ? 'CAA 明确禁止任何 CA 签发' : 'CAA 只允许：' + list.map(function(v){ return v.split(';')[0].trim(); }).join('、')};
-  }
-
-  async function findCAA(domain){
-    var labels = domain.replace(/^\*\./, '').split('.');
-    for(var i = 0; i < labels.length - 1; i++){
-      var zone = labels.slice(i).join('.');
-      var recs = await queryCAA(zone);
-      if(recs.length){ return {zone:zone, records:recs}; }
-    }
-    return {zone:null, records:[], checked: labels.length - 1};
-  }
-
-  function queryTXT(name){
-    var url = 'https://dns.alidns.com/resolve?name=' + encodeURIComponent(name) + '&type=TXT';
-    return fetch(url, {cache:'no-store'})
-      .then(function(r){ return r.json(); })
-      .then(function(j){
-        if(!j.Answer) return [];
-        return j.Answer.filter(function(a){ return a.type === 16; })
-          .map(function(a){ return String(a.data).replace(/^"|"$/g, '').replace(/\\"/g, '"'); });
-      });
-  }
-
   async function verifyAndIssue(){
-    if(!TOKEN || !VERIFY_NAME){ showErr('请先填写域名，再点上方按钮生成 TXT 记录。'); return; }
+    if(!TOKEN || !VERIFY_NAME){ showErr('请先填写域名，再点上方按钮取得 TXT 记录。'); return; }
     hideErr();
     $('verify').disabled = true;
     $('vstatus').textContent = '正在查询 DNS TXT 记录…';
-    $('caa_res').textContent = '检查中…';
     try{
       var txts = await queryTXT(VERIFY_NAME);
-      var hit = txts.some(function(v){
-        var bare = TOKEN.split('=')[1];
-        return v.indexOf(TOKEN) !== -1 || v.indexOf(bare) !== -1;
-      });
+      var bare = TOKEN.split('=')[1];
+      var hit = txts.some(function(v){ return v.indexOf(TOKEN) !== -1 || v.indexOf(bare) !== -1; });
       if(!hit){
         $('vstatus').textContent = '未查询到匹配的 TXT 记录。可能还没生效，DNS 通常需要 1 到 10 分钟，稍后再点一次。';
         $('verify').disabled = false;
         return;
       }
-      var found = await findCAA(VERIFY_BASE);
-      var r = caaAllows(found.records, parseDomains($('domains').value)[0] || '');
-      if(found.zone){ r.reason = r.reason + '（查询位置：' + found.zone + '）'; }
-      $('caa_res').textContent = (r.ok ? '通过 · ' : '不通过 · ') + r.reason;
-      if(!r.ok){
-        showErr('CAA 记录不允许签发：' + r.reason + '。如要放行，请在 DNS 添加一条 CAA 记录：0 issue "webcat.bbroot.com"（通配域名再加 0 issuewild "webcat.bbroot.com"）。');
-        $('vstatus').textContent = 'TXT 已通过，但 CAA 检查未通过，已停止签发。';
-        $('verify').disabled = false;
-        return;
-      }
-      $('vstatus').textContent = 'TXT 与 CAA 均通过，正在签发…';
+      $('vstatus').textContent = 'TXT 验证通过，正在签发…';
       issue();
     }catch(e){
       showErr('查询 DNS 失败：' + (e && e.message ? e.message : e) + '（可能是网络或跨域限制，请稍后重试）');
-      $('caa_res').textContent = '查询失败';
       $('vstatus').textContent = '';
       $('verify').disabled = false;
     }
@@ -530,7 +414,6 @@
   }
 
   $('go').addEventListener('click', makeRecord);
-  $('mkrec2').addEventListener('click', makeRecord);
   $('amount').addEventListener('input', refreshPreview);
   Array.prototype.forEach.call(document.querySelectorAll('.unit'), function(b){
     b.addEventListener('click', function(){
@@ -550,12 +433,6 @@
   $('cp_txt').addEventListener('click', function(){
     if(navigator.clipboard && navigator.clipboard.writeText){
       navigator.clipboard.writeText(TOKEN).then(function(){ setStatus('TXT 记录值已复制'); });
-    }
-  });
-  $('cp_caa').addEventListener('click', function(){
-    var txt = '0 issue "webcat.bbroot.com"';
-    if(navigator.clipboard && navigator.clipboard.writeText){
-      navigator.clipboard.writeText(txt).then(function(){ setStatus('CAA 记录值已复制'); });
     }
   });
   $('reset_ca').addEventListener('click', function(){
