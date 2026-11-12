@@ -81,30 +81,8 @@
       </div>
     </div>
 
-    <div style="margin-top:18px"><button id="go">获取 TXT 验证记录</button></div>
+    <div style="margin-top:18px"><button id="go">签发证书</button></div>
     <div class="hint" id="status"></div>
-  </div>
-
-  <div class="card" id="vbox">
-    <label>第 2 步 · 域名验证</label>
-    <div class="hint">先在 DNS 添加一条 TXT 记录验证域名归属，签发前会查询这条 TXT，查到才允许签发。记录值由域名固定推导，不会重新生成。</div>
-
-    <div id="vrecord" style="display:none;margin-top:14px">
-      <label>TXT 记录（必填 · 验证域名归属）</label>
-      <div class="kv"><span>类型</span><span>TXT</span></div>
-      <div class="kv"><span>主机记录</span><span id="v_name" style="word-break:break-all;text-align:right">_webcat-verify.</span></div>
-      <div class="kv"><span>记录值</span><span id="v_value" style="word-break:break-word;text-align:right"></span></div>
-      <div class="btnline">
-        <button class="ghost" id="cp_txt">复制 TXT 记录值</button>
-      </div>
-      <div class="hint">主机记录填完整的 <b>_webcat-verify.你的域名</b>，记录值整串复制，不要改动。这条记录是<b>固定值</b>：同一个域名每次打开看到的都一样，不能重新生成。DNS 生效通常需要 1 到 10 分钟。</div>
-    </div>
-
-    <div class="btnline" style="margin-top:14px">
-      <button class="ghost" id="verify">验证并签发</button>
-      <button class="ghost" id="force_issue">跳过验证 · 直接签发</button>
-    </div>
-    <div class="hint" id="vstatus"></div>
   </div>
 
   <div class="card" id="cabox">
@@ -161,9 +139,8 @@
   <div class="card warnbox">
     <b>使用说明</b><br>
     1. 先在有效时长输入框填数字，再点「天 / 月 / 年」，下方会实时显示当前设置与预计到期时间。<br>
-    2. 点「获取 TXT 验证记录」，会得到一条固定值：主机记录 `_webcat-verify.你的域名`，记录值 `webcat-verify=…`，把它加到 DNS。<br>
-    3. 点「验证并签发」，通过后即生成证书。签发前需要根证书就绪：点「下载根证书 rootCA.crt」，装进设备信任列表，本站签发的证书才会被系统信任；没装过的设备仍会提示不受信任。<br>
-    3.1 需要跳过验证时点「跳过验证 · 直接签发」，它会不查 TXT 直接出证（手动签发，风险自负）。
+    2. 点「签发证书」，直接在浏览器本地生成证书与私钥，不校验域名归属、不查任何 DNS 记录。<br>
+    3. 生成后页面显示域名、签发机构、生效时间与失效时间。签发前需要根证书就绪：点「下载根证书 rootCA.crt」，装进设备信任列表，本站签发的证书才会被系统信任；没装过的设备仍会提示不受信任。<br>
 4. 传输证书优先用「加密导出」的 .p12（先设口令，至少 6 位），内含证书与私钥，必须口令才能打开，不要明文外发私钥。<br>
     5. 证书与私钥全部在本机浏览器生成，不上传服务器，关闭页面即清除。
   </div>
@@ -236,72 +213,11 @@
     return md.digest().toHex().toUpperCase().replace(/(.{2})/g, '$1:').replace(/:$/, '');
   }
 
-  var VERIFY_BASE = null, VERIFY_NAME = null, TOKEN = null;
-
-  async function makeRecord(){
-    hideErr();
-    $('outbox').style.display='none';
-    var domains = parseDomains($('domains').value);
-    if(!domains.length){ showErr('请至少填写一个域名。'); return; }
-    var base = domains[0].replace(/^\*\./, '');
-    VERIFY_BASE = base;
-    VERIFY_NAME = '_webcat-verify.' + base;
-    TOKEN = 'webcat-verify=' + forge.md.sha256.create().update(base).digest().toHex().slice(0, 32);
-    $('v_name').textContent = VERIFY_NAME;
-    $('v_value').textContent = TOKEN;
-    $('vrecord').style.display = 'block';
-    $('vstatus').textContent = '记录值由域名固定推导：同一个域名永远得到同一条记录，刷新页面也不会变，不能重新生成。添加后点「验证并签发」。';
-    $('verify').disabled = false;
-    setStatus('');
-    $('go').disabled = false;
-  }
-
-  function queryTXT(name){
-    var url = 'https://dns.alidns.com/resolve?name=' + encodeURIComponent(name) + '&type=TXT';
-    return fetch(url, {cache:'no-store'})
-      .then(function(r){ return r.json(); })
-      .then(function(j){
-        if(!j.Answer) return [];
-        return j.Answer.filter(function(a){ return a.type === 16; })
-          .map(function(a){ return String(a.data).replace(/^"|"$/g, '').replace(/\\"/g, '"'); });
-      });
-  }
-
-  async function verifyAndIssue(){
+  function sign(){
     hideErr();
     var domains = parseDomains($('domains').value);
     if(!domains.length){ showErr('请先填写要签发的域名。'); return; }
-    $('verify').disabled = true;
-    if(!TOKEN || !VERIFY_NAME){ await makeRecord(); }
-    $('vstatus').textContent = '正在查询 DNS TXT 记录…';
-    try{
-      var txts = await queryTXT(VERIFY_NAME);
-      var bare = TOKEN.split('=')[1];
-      var hit = txts.some(function(v){ return v.indexOf(TOKEN) !== -1 || v.indexOf(bare) !== -1; });
-      if(!hit){
-        var extra = '';
-        try{
-          var atBase = await queryTXT(VERIFY_BASE);
-          if(atBase.length){
-            var sameName = atBase.some(function(v){ return v === bare || v.indexOf('webcat-verify') !== -1; });
-            if(sameName){
-              extra = ' 检测到验证值写在了 ' + VERIFY_BASE + ' 上，主机记录要改成 ' + VERIFY_NAME + '。';
-            }else{
-              extra = ' 另外检测到 ' + VERIFY_BASE + ' 上有一条 TXT：' + atBase.slice(0, 2).join('、') + '。如果这是你想指向别处的目标，类型选错了：它应当是 CNAME 记录，而不是 TXT。TXT 会占用这个名字，导致 CNAME 加不进去、站点无法解析。';
-            }
-          }
-        }catch(e){}
-        $('vstatus').textContent = '未查询到 ' + VERIFY_NAME + ' 的 TXT 记录。请在 DNS 添加：类型 TXT，主机记录 ' + VERIFY_NAME + '，记录值 ' + TOKEN + '，等 1 到 10 分钟生效后再点一次。' + extra;
-        $('verify').disabled = false;
-        return;
-      }
-      $('vstatus').textContent = 'TXT 验证通过，正在签发…';
-      issue();
-    }catch(e){
-      showErr('查询 DNS 失败：' + (e && e.message ? e.message : e) + '（可能是网络或跨域限制，请稍后重试）');
-      $('vstatus').textContent = '';
-      $('verify').disabled = false;
-    }
+    issue();
   }
 
   var CA_KEY = 'webcat_free_ca_key', CA_CERT = 'webcat_free_ca_crt';
@@ -440,7 +356,7 @@
     }, 30);
   }
 
-  $('go').addEventListener('click', makeRecord);
+  $('go').addEventListener('click', sign);
   $('amount').addEventListener('input', refreshPreview);
   Array.prototype.forEach.call(document.querySelectorAll('.unit'), function(b){
     b.addEventListener('click', function(){
@@ -451,24 +367,10 @@
     });
   });
   setTimeout(refreshPreview, 50);
-  $('verify').addEventListener('click', verifyAndIssue);
-  $('force_issue').addEventListener('click', function(){
-    hideErr();
-    var domains = parseDomains($('domains').value);
-    if(!domains.length){ showErr('请先填写要签发的域名。'); return; }
-    if(!confirm('跳过 TXT 验证会直接签发：不校验域名归属，任何人都能为自己填写的域名签出证书。确定继续？')) return;
-    $('vstatus').textContent = '已跳过验证，正在直接签发…';
-    issue();
-  });
   $('dl_ca').addEventListener('click', function(){
     var ca = ensureCA();
     download('rootCA.crt', forge.pki.certificateToPem(ca.cert), 'application/x-x509-ca-cert');
     setStatus('已下载根证书 rootCA.crt，请在设备里安装。');
-  });
-  $('cp_txt').addEventListener('click', function(){
-    if(navigator.clipboard && navigator.clipboard.writeText){
-      navigator.clipboard.writeText(TOKEN).then(function(){ setStatus('TXT 记录值已复制'); });
-    }
   });
   $('reset_ca').addEventListener('click', function(){
     if(!confirm('重置后旧证书仍可用，但新证书要用新的根证书才能被信任。确定重置？')) return;
