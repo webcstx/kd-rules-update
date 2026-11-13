@@ -528,7 +528,7 @@ function tsErr(c){ window.__tsToken=''; var b=document.getElementById('go'); if(
     ISSUER_CHOICE = k;
     $('iss_note').textContent = ISSUER_NOTE[k];
     var local = k === 'local';
-    $('go').disabled = !local;
+    $('go').disabled = !local || !window.__tsToken;
     $('go').textContent = local ? '生成证书' : '该 CA 需外部申请';
     $('enddate').disabled = !local;
     if(!local){ $('preview').textContent = '到期时间：由该 CA 决定，不能自选'; }
