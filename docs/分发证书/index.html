@@ -190,7 +190,7 @@
     </div>
 
     <div class="out" id="acme_step2b" style="margin-top:14px">
-      <div class="hint" style="margin-top:0">或者在站点上放一个验证文件（HTTP-01，适合 GitHub Pages 这类静态站）：</div>
+      <div class="hint" style="margin-top:0">或者在站点上放一个验证文件（HTTP-01，只适合自己能放文件的服务器；GitHub Pages 不发布 <code>.well-known</code> 目录，实测返回 404，这种情况请用上面的 DNS 方式）：</div>
       <div class="kv"><span>文件网址</span><span id="acme_http_path" style="word-break:break-all"></span></div>
       <div class="kv"><span>文件内容</span><span id="acme_http_val" style="word-break:break-all"></span></div>
       <div class="hint">把上面这段内容存成该路径下的纯文本文件（不要换行、不要加空格），确认能打开，再点验证。</div>
