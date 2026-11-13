@@ -186,7 +186,15 @@
       <div class="kv"><span>主机记录</span><span id="acme_txtname" style="word-break:break-all"></span></div>
       <div class="kv"><span>记录值</span><span id="acme_txtval" style="word-break:break-all"></span></div>
       <div class="hint">把上面这条加到 DNS（根域或该子域都可以），等 1–5 分钟生效，再点下一步。TXT 值里不要加引号、不要加空格。</div>
-      <div class="btnline"><button class="ghost" id="acme_check">2. 我已添加，开始验证并签发</button></div>
+      <div class="btnline"><button class="ghost" id="acme_check">2a. 我已添加 TXT，开始验证并签发</button></div>
+    </div>
+
+    <div class="out" id="acme_step2b" style="margin-top:14px">
+      <div class="hint" style="margin-top:0">或者在站点上放一个验证文件（HTTP-01，适合 GitHub Pages 这类静态站）：</div>
+      <div class="kv"><span>文件网址</span><span id="acme_http_path" style="word-break:break-all"></span></div>
+      <div class="kv"><span>文件内容</span><span id="acme_http_val" style="word-break:break-all"></span></div>
+      <div class="hint">把上面这段内容存成该路径下的纯文本文件（不要换行、不要加空格），确认能打开，再点验证。</div>
+      <div class="btnline"><button class="ghost" id="acme_check_http">2b. 文件已就绪，开始验证并签发</button></div>
     </div>
 
     <div class="out" id="acme_step3" style="margin-top:14px">
@@ -764,15 +772,23 @@
       st.order = order;
       var authz = await postJson(order.authorizations[0], '', false);
       st.authz = authz;
-      var ch = (authz.challenges || []).filter(function(c){ return c.type === 'dns-01'; })[0];
-      if(!ch) throw new Error('该订单没有 dns-01 挑战');
-      st.chal = ch;
-      var keyAuth = ch.token + '.' + await thumb(st.jwk);
-      var digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(keyAuth));
-      el('acme_txtname').textContent = '_acme-challenge.' + domain.replace(/^\*\./,'');
-      el('acme_txtval').textContent = b64(digest);
-      el('acme_step2').style.display = 'block';
-      say('订单已创建。把下面这条 TXT 加到 DNS，确认生效后点第 2 步。');
+      var chs = authz.challenges || [];
+      st.chalDns = chs.filter(function(c){ return c.type === 'dns-01'; })[0] || null;
+      st.chalHttp = chs.filter(function(c){ return c.type === 'http-01'; })[0] || null;
+      var tp = await thumb(st.jwk);
+      if(st.chalDns){
+        var keyAuthD = st.chalDns.token + '.' + tp;
+        var digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(keyAuthD));
+        el('acme_txtname').textContent = '_acme-challenge.' + domain.replace(/^\*\./,'');
+        el('acme_txtval').textContent = b64(digest);
+        el('acme_step2').style.display = 'block';
+      }
+      if(st.chalHttp){
+        el('acme_http_path').textContent = 'http://' + domain.replace(/^\*\./,'') + '/.well-known/acme-challenge/' + st.chalHttp.token;
+        el('acme_http_val').textContent = st.chalHttp.token + '.' + tp;
+        el('acme_step2b').style.display = 'block';
+      }
+      say('订单已创建。改 DNS 的 TXT 或放好验证文件，二选一，然后点对应的验证按钮。');
     }catch(e){
       say('出错：' + e.message, 'err');
     }
@@ -798,11 +814,12 @@
     throw new Error('订单等待超时');
   }
 
-  async function check(){
-    if(!st.chal){ say('先点第 1 步创建订单。', 'err'); return; }
+  async function check(kind){
+    var ch = (kind === 'http') ? st.chalHttp : st.chalDns;
+    if(!ch){ say('先点第 1 步创建订单，或该订单没有这种验证方式。', 'err'); return; }
     try{
-      say('正在通知 CA 验证 DNS…');
-      await postJson(st.chal.url, {}, false);
+      say(kind === 'http' ? '正在通知 CA 验证文件…' : '正在通知 CA 验证 DNS…');
+      await postJson(ch.url, {}, false);
       await pollAuthz();
       say('验证通过，正在生成证书密钥与 CSR…');
       var kp = forge.pki.rsa.generateKeyPair(2048);
@@ -841,7 +858,8 @@
   }
 
   if(el('acme_start')) el('acme_start').addEventListener('click', start);
-  if(el('acme_check')) el('acme_check').addEventListener('click', check);
+  if(el('acme_check')) el('acme_check').addEventListener('click', function(){ check('dns'); });
+  if(el('acme_check_http')) el('acme_check_http').addEventListener('click', function(){ check('http'); });
   if(el('acme_dl_cert')) el('acme_dl_cert').addEventListener('click', function(){ save('acme-cert.pem', el('acme_cert_txt').value); });
   if(el('acme_dl_key')) el('acme_dl_key').addEventListener('click', function(){ save('acme-key.pem', el('acme_key_txt').value); });
 })();
