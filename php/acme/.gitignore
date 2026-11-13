@@ -1,0 +1,5 @@
+account_key.pem
+cert_key.pem
+fullchain.pem
+privkey.pem
+*.p12
