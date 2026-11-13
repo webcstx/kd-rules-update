@@ -83,7 +83,7 @@
   <div class="card" id="cabox">
     <label>根证书 · FreeIssue CA</label>
     <div class="hint" id="ca_status">根证书固定唯一，有效期 20 年，保存后一直复用，不重新生成；下面的指纹就是唯一凭据。</div>
-    <div class="kv"><span>根证书名称</span><span id="caNameTxt">CN=FreeIssue Root CA, O=FreeIssue</span></div>
+    <div class="kv"><span>根证书名称</span><span id="caNameTxt">CN=Free Issuance Root CA, O=Free Issuance</span></div>
     <div class="kv"><span>SHA-256 指纹</span><span id="ca_fp" style="word-break:break-all;text-align:right">—</span></div>
     <div class="btnline" style="margin-top:12px">
       <button class="ghost" id="dl_ca">下载根证书 rootCA.crt</button>
@@ -220,7 +220,7 @@ file_put_contents('private_key.pem',$private_key);
     if(b.charAt(b.length-1) !== '/'){ b += '/'; }
     return b;
   })();
-  var ISSUER = SITE + 'FreeIssue';
+  var ISSUER = SITE + 'Free Issuance';
   var $ = function(id){ return document.getElementById(id); };
 
   function parseDomains(v){
@@ -291,8 +291,8 @@ file_put_contents('private_key.pem',$private_key);
   }
 
   var CA_KEY = 'webcat_free_ca_key', CA_CERT = 'webcat_free_ca_crt';
-  var CA_DN_CN = 'FreeIssue Root CA';
-  var CA_DN_O = 'FreeIssue';
+  var CA_DN_CN = 'Free Issuance Root CA';
+  var CA_DN_O = 'Free Issuance';
 
   function buildCA(){
     var U = forge.asn1.Type.UTF8;
@@ -398,8 +398,8 @@ file_put_contents('private_key.pem',$private_key);
         var ca = ensureCA();
         var raw = domains[0];
         var dnSubject = [
-          {name:'commonName', value: raw, valueTagClass: U},
-          {name:'organizationName', value: 'FreeIssue', valueTagClass: U}
+          {name:'commonName', value: 'Free Issuance', valueTagClass: U},
+          {name:'organizationName', value: 'Free Issuance', valueTagClass: U}
         ];
 
         var cert = forge.pki.createCertificate();
@@ -454,7 +454,7 @@ file_put_contents('private_key.pem',$private_key);
     var txt = ISSUER;
     var el;
     if(el = $('issuerTxt')){ el.textContent = txt; }
-    if(el = $('caNameTxt')){ el.textContent = 'CN=FreeIssue Root CA, O=FreeIssue'; }
+    if(el = $('caNameTxt')){ el.textContent = 'CN=Free Issuance Root CA, O=Free Issuance'; }
     if(el = $('footHost')){ el.textContent = SITE.replace(/^https?:\/\//,'').replace(/\/$/,''); }
   })();
 
