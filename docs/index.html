@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>自由签发 · SSL 证书分发</title>
+<title>FreeIssue · SSL 证书分发</title>
 <style>
   :root{
     --bg:#141e2a; --card:#1b2734; --line:#2b3d4e; --fg:#e9f1f7;
@@ -51,9 +51,9 @@
 </head>
 <body>
 <div class="wrap">
-  <span class="tag">自由签发 · SSL 证书分发</span>
-  <h1>自由签发</h1>
-  <p class="sub">由本站自建的根证书（自由签发 CA）为你的域名签发证书，有效期可自定义。先在设备里安装一次根证书，之后签发的证书就会被系统信任。签发机构标识为 <code id="issuerTxt">https://webcat.bbroot.com/分发证书</code>。</p>
+  <span class="tag">FreeIssue · SSL 证书分发</span>
+  <h1>FreeIssue</h1>
+  <p class="sub">由本站自建的根证书（FreeIssue CA）为你的域名签发证书，有效期可自定义。先在设备里安装一次根证书，之后签发的证书就会被系统信任。签发机构标识为 <code id="issuerTxt">https://webcat.bbroot.com/分发证书</code>。</p>
 
   <div class="card">
     <label>域名（多个用换行或逗号分隔）</label>
@@ -93,7 +93,7 @@
   </div>
 
   <div class="card" id="cabox">
-    <label>根证书 · 自由签发 CA</label>
+    <label>根证书 · FreeIssue CA</label>
     <div class="hint" id="ca_status">根证书固定唯一，有效期 20 年，保存后一直复用，不重新生成；下面的指纹就是唯一凭据。</div>
     <div class="kv"><span>根证书名称</span><span id="caNameTxt">CN=FreeIssue Root CA, O=FreeIssue</span></div>
     <div class="kv"><span>SHA-256 指纹</span><span id="ca_fp" style="word-break:break-all;text-align:right">—</span></div>
@@ -232,7 +232,7 @@ file_put_contents('private_key.pem',$private_key);
     if(b.charAt(b.length-1) !== '/'){ b += '/'; }
     return b;
   })();
-  var ISSUER = SITE + '分发证书';
+  var ISSUER = SITE + 'FreeIssue';
   var $ = function(id){ return document.getElementById(id); };
 
   function parseDomains(v){
