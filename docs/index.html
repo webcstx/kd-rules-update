@@ -128,20 +128,22 @@
   <section class="hero-head">
     <span class="tag">Free Issuance</span>
     <h1>自由签发 SSL 证书</h1>
-    <p class="sub">浏览器本地生成，到期日自己选，不向任何 CA 申请、不查 DNS。颁发机构标识 <code id="issuerTxt">https://你的域名/Free Issuance</code>。</p>
+    <p class="sub">自由签发在浏览器本地生成；选 Let&rsquo;s Encrypt 则向公共 CA 申请。颁发机构标识 <code id="issuerTxt">https://你的域名/Free Issuance</code>。</p>
   </section>
 
   <div class="card">
     <label>证书颁发机构</label>
-    <div class="hint" style="margin-top:0;margin-bottom:12px">证书在本页面本地生成，到期日自己选，不向任何公共 CA 申请、不查 DNS。</div>
+    <div class="hint" style="margin-top:0;margin-bottom:12px">自由签发：证书在本页本地生成，到期日自己选，不向公共 CA 申请、不查 DNS。Let&rsquo;s Encrypt：真的向公共 CA 申请，需要加一条 DNS TXT。</div>
 
     <div class="iss on" data-k="local"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.4 4.7 5.4v5.7c0 4.7 3.1 8.6 7.3 10.5 4.2-1.9 7.3-5.8 7.3-10.5V5.4z" fill="#e8f8f1" stroke="#0fa47a" stroke-width="1.6"/><rect x="9.2" y="10.9" width="5.6" height="4.8" rx="1.2" fill="#0fa47a"/><path d="M10.5 10.9v-1.5a1.8 1.8 0 0 1 3.6 0v1.5" fill="none" stroke="#0fa47a" stroke-width="1.5"/></svg></span><div class="txt"><b>自由签发（Free Issuance）</b><small>本页自建根证书签发，到期日自选，设备要先装 rootCA.crt</small></div>
     </div>
 
+    <div class="iss" data-k="le"><span class="ic"><img src="assets/cloudflare.png" alt="" style="width:22px;height:24px;object-fit:contain"></span><div class="txt"><b>Let&rsquo;s Encrypt</b><small>向公共 CA 申请真实可信证书，需加一条 DNS TXT 验证</small></div></div>
+
     <div class="hint" id="iss_note" style="white-space:pre-wrap;margin-top:12px">当前选择：自由签发（Free Issuance），证书在本页本地生成，到期日由你选。</div>
   </div>
 
-  <div class="card">
+  <div class="card" id="gencard">
     <label>域名（多个用换行或逗号分隔）</label>
     <input id="domains" placeholder="填写你的域名，例如 example.com">
     <div class="hint">支持通配符（如 *.bbroot.com）与 IP 地址，会自动写入证书的 SAN 扩展。</div>
@@ -183,7 +185,7 @@
     <div class="hint">安装位置：安卓「设置 → 安全 → 加密与凭据 → 安装证书 → CA 证书」；Windows 选「受信任的根证书颁发机构」；iOS 用描述文件安装后到「关于本机 → 证书信任设置」里开启。</div>
   </div>
 
-  <div class="card" id="acmecard">
+  <div class="card" id="acmecard" style="display:none">
     <label><img src="assets/cloudflare.png" alt="Cloudflare" style="width:24px;height:26px;object-fit:contain">Let&rsquo;s Encrypt 签发（DNS-01，浏览器直接申请）</label>
     <div class="hint" style="margin-top:0">真的向 Let&rsquo;s Encrypt 申请公共可信证书，全程在浏览器里跑；需要你能改这个域名的 DNS。</div>
     <div class="row" style="margin-top:14px">
@@ -564,6 +566,10 @@ function tsErr(c){ window.__tsToken=''; var b=document.getElementById('go'); if(
     $('go').disabled = !local || !window.__tsToken;
     $('go').textContent = local ? '生成证书' : '该 CA 需外部申请';
     $('enddate').disabled = !local;
+    if($('gencard')){ $('gencard').style.display = local ? '' : 'none'; }
+    if($('cabox')){ $('cabox').style.display = local ? '' : 'none'; }
+    if($('acmecard')){ $('acmecard').style.display = local ? 'none' : ''; }
+    if(!local){ var box=document.querySelector('#acmecard .cf-turnstile'); if(box && window.turnstile && !box.getAttribute('data-rendered')){ try{ turnstile.render(box,{sitekey:'0x4AAAAAAF_m03XPKegNGNal',theme:'light',language:'zh-cn',callback:tsOk,'expired-callback':tsExpired,'error-callback':tsErr}); box.setAttribute('data-rendered','1'); }catch(e){} } }
     if(!local){ $('preview').textContent = '到期时间：由该 CA 决定，不能自选'; }
     else { refreshPreview(); }
     setStatus('');
