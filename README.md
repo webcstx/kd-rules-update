@@ -1,39 +1,36 @@
-# 应用广告拦截
+# Free Issuance SSL 证书分发
+本地浏览器自签证书工具，全程在前端完成生成，不会上传域名、不会发起DNS查询、无CAA校验。
 
-GKD 安卓广告拦截订阅，毫秒级响应，精准不误触。
+## 证书信息
+- 根证书：CN=Free Issuance Root CA, O=Free Issuance
+- 站点证书：CN=Free Issuance, O=Free Issuance
+- 域名存放位置：仅写入SAN扩展，不放在通用名称CN字段
+- 根证书规则：首次打开页面生成，浏览器本地存储复用，页面无重置按钮，如需重新生成，清除站点localStorage
 
-## 订阅地址
-```
-https://github.com/webcstx/doubao-quick-tools/releases/download/v3.0.1/GKD-subscription.json3
-```
+## 使用步骤
+1. 域名输入框填写目标域名，支持单域名、通配符域名
+2. 使用日期选择器，直接选定证书到期日期，不按天数自动推算
+3. 点击【生成证书】
+4. 下载文件：rootCA.crt、cert.pem、fullchain.pem、私钥key.pem
 
-## 功能
-- 🚀 毫秒级自动跳过开屏广告
-- 🎯 精准拦截，不误触正常按钮
-- 🛡️ 排除权限弹窗、通知弹窗等
-- ⚡ 快速查询模式
+## 部署Nginx HTTPS示例
+```nginx
+ssl_certificate     fullchain.pem;
+ssl_certificate_key key.pem;
+## 星级历史
 
-## 分类
-- 开屏广告
-- 青少年模式
-- 更新提示
-- 评价提示
-- 通知提示
-- 权限提示
-- 局部广告
-- 全屏广告
-- 分段广告
-- 功能类
-- 其他
-
-## 贡献
-欢迎提交规则补充和修复，查看 [贡献指南](CONTRIBUTING.md)。
-
-## Star History
 <a href="https://star-history.com/#webcstx/doubao-quick-tools&Date">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=webcstx/doubao-quick-tools&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=webcstx/doubao-quick-tools&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=webcstx/doubao-quick-tools&type=Date" />
- </picture>
+
+<图片>
+
+<资料来源 媒体="（偏好配色方案：深色）" srcset="https://api.star-history.com/svg?repos=webcstx/doubao-quick-tools&type=Date&theme=dark" />
+
+<资料来源 媒体="（偏好配色方案：轻）" srcset="https://api.star-history.com/svg?repos=webcstx/doubao-quick-tools&type=Date" />
+
+<图片 替代="星史图表" SRC="https://api.star-history.com/svg?repos=webcstx/doubao-quick-tools&type=Date" />
+
+</图片>
+
 </a>
+
+
