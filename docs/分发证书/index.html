@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>自由签发 · 证书下载</title>
+<title>自由签发 · SSL 证书分发</title>
 <style>
   :root{
     --bg:#141e2a; --card:#1b2734; --line:#2b3d4e; --fg:#e9f1f7;
-    --dim:#95a9bb; --acc:#3ddc97;
+    --dim:#95a9bb; --acc:#3ddc97; --warn:#ffb547; --err:#ff6b6b;
   }
   *{box-sizing:border-box}
   body{
@@ -21,93 +21,573 @@
   h1{font-size:26px;margin:0 0 8px;font-weight:700;letter-spacing:.5px}
   .sub{color:var(--dim);font-size:13.5px;margin:0 0 22px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
-  .card h2{font-size:15px;margin:0 0 12px;color:var(--acc);font-weight:700}
+  label{display:block;font-size:13px;color:var(--acc);margin-bottom:6px}
+  input,select,textarea{width:100%;background:#101a25;border:1px solid var(--line);color:var(--fg);
+    border-radius:10px;padding:11px 12px;font-size:14px;font-family:inherit;outline:none}
+  input:focus,select:focus{border-color:rgba(61,220,151,.55)}
+  textarea{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.5;height:150px;resize:vertical}
+  .row{display:flex;gap:12px}
+  .row>div{flex:1}
+  .hint{color:var(--dim);font-size:12px;margin-top:6px}
+  button{background:var(--acc);color:#062018;border:0;border-radius:10px;padding:12px 18px;
+    font-size:15px;font-weight:700;cursor:pointer;width:100%}
+  button:disabled{opacity:.55;cursor:not-allowed}
+  .ghost{background:transparent;border:1px solid var(--line);color:var(--fg);font-weight:600;font-size:13px;padding:9px 12px;width:auto}
+  .out{display:none}
+  .ok{color:var(--acc);font-weight:700}
   .kv{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:7px 0;border-bottom:1px dashed var(--line)}
   .kv:last-child{border-bottom:0}
   .kv span:first-child{color:var(--dim)}
-  .kv span:last-child{text-align:right;word-break:break-all}
-  .hint{color:var(--dim);font-size:12px;margin-top:8px}
-  .btns{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
-  a.btn{display:inline-block;text-decoration:none;border:1px solid var(--line);color:var(--fg);
-    padding:10px 14px;border-radius:10px;font-size:13px;font-weight:600}
-  a.btn.primary{background:var(--acc);color:#062018;border-color:transparent}
-  pre{background:#101a25;border:1px solid var(--line);border-radius:10px;padding:12px;
-    font-size:12px;line-height:1.55;overflow-x:auto;margin:10px 0 0}
+  .warnbox{background:rgba(255,181,71,.08);border:1px solid rgba(255,181,71,.35);border-radius:12px;padding:14px;font-size:13.5px;line-height:1.7}
+  .warnbox b{color:var(--warn)}
+  .errbox{background:rgba(255,107,107,.08);border:1px solid rgba(255,107,107,.35);border-radius:12px;padding:14px;font-size:13.5px;display:none}
+  .btnline{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap}
   footer{color:var(--dim);font-size:12px;text-align:center;margin-top:26px}
+  a{color:var(--acc);text-decoration:none}
+  .units{display:flex;gap:8px}
+  .unit{flex:1;min-height:46px;padding:0 12px;background:#0a1412;border:1px solid var(--line);color:var(--dim);border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;width:auto}
+  .unit.on{background:rgba(61,220,151,.14);border-color:rgba(61,220,151,.6);color:var(--acc)}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <span class="tag">不签发 · 仅下载</span>
-  <h1>自由签发 · 证书下载</h1>
-  <p class="sub">本页只提供证书文件下载，页面内不执行任何签发操作，也不查询 DNS。下载后把根证书装进设备信任列表，再把站点证书与私钥放到服务器上即可启用 HTTPS。</p>
+  <span class="tag">自由签发 · SSL 证书分发</span>
+  <h1>自由签发</h1>
+  <p class="sub">由本站自建的根证书（自由签发 CA）为你的域名签发证书，有效期可自定义。先在设备里安装一次根证书，之后签发的证书就会被系统信任。签发机构标识为 <code id="issuerTxt">https://webcat.bbroot.com/分发证书</code>。</p>
 
   <div class="card">
-    <h2>根证书 · FreeIssue Root CA</h2>
-    <div class="kv"><span>证书名称</span><span>CN = FreeIssue Root CA</span></div>
-    <div class="kv"><span>组织</span><span>O = FreeIssue</span></div>
-    <div class="kv"><span>有效期</span><span>2026-11-13 至 2046-11-08（20 年）</span></div>
-    <div class="kv"><span>SHA-256 指纹</span><span>40:E4:A1:BF:27:EC:7A:A7:4F:0E:31:BB:21:9D:A3:22:1E:96:9F:E2:6A:AB:A9:37:FB:C7:22:82:AD:51:9D:4B</span></div>
-    <div class="btns">
-      <a class="btn primary" href="../downloads/rootCA.crt" download>下载根证书 rootCA.crt</a>
+    <label>域名（多个用换行或逗号分隔）</label>
+    <input id="domains" value="" placeholder="填写你的域名，例如 example.com">
+    <div class="hint">支持通配符（如 *.bbroot.com）与 IP 地址，会自动写入证书的 SAN 扩展。</div>
+
+    <div class="row" style="margin-top:16px">
+      <div>
+        <label>有效时长（先输入数字，再选 天 / 月 / 年）</label>
+        <input id="amount" type="number" min="1" step="1" value="90" inputmode="numeric" placeholder="输入要签发的数字" style="width:100%;font-size:20px;font-weight:700;text-align:center;padding:14px 12px">
+        <div class="units" style="margin-top:10px">
+          <button type="button" class="unit on" data-u="day">天</button>
+          <button type="button" class="unit" data-u="month">月</button>
+          <button type="button" class="unit" data-u="year">年</button>
+        </div>
+        <div class="hint" id="preview">当前设置：90 天</div>
+      </div>
+      <div>
+        <label>密钥长度</label>
+        <select id="bits">
+          <option value="2048" selected>RSA 2048（推荐，生成快）</option>
+          <option value="4096">RSA 4096（更慢，强度更高）</option>
+        </select>
+        <div class="hint">浏览器本地生成，2048 位一般需要 1 到 3 秒。</div>
+      </div>
     </div>
-    <div class="hint">装进信任列表后，由这张根证书签发的站点证书才会被系统信任；没装过的设备仍会提示不受信任。</div>
-  </div>
 
-  <div class="card">
-    <h2>站点证书 · webcat.bbroot.com</h2>
-    <div class="kv"><span>域名（SAN）</span><span>webcat.bbroot.com、*.bbroot.com</span></div>
-    <div class="kv"><span>签发者</span><span>CN = FreeIssue Root CA</span></div>
-    <div class="kv"><span>有效期</span><span>2026-11-13 至 2029-02-15（825 天）</span></div>
-    <div class="kv"><span>SHA-256 指纹</span><span>21:32:1A:64:3F:0F:F6:E5:BD:D7:D6:D7:27:96:65:29:A9:FC:D1:87:98:E1:F4:6C:45:36:A6:D8:29:54:23:F5</span></div>
-    <div class="btns">
-      <a class="btn" href="../downloads/cert.pem" download>下载证书 cert.pem</a>
-      <a class="btn" href="../downloads/fullchain.pem" download>下载证书链 fullchain.pem</a>
+    <div style="margin-top:14px">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+        <input type="checkbox" id="caacheck" checked style="width:auto;margin:0">
+        <span>签发前查询 CAA 记录，查到才放行</span>
+      </label>
+      <div class="hint" id="caa_info" style="white-space:pre-wrap"></div>
     </div>
-    <div class="hint">私钥不在本页下发，请自行在服务器上保管；本页只提供公开的证书文件。</div>
+    <div style="margin-top:18px"><button id="go">签发证书</button></div>
+    <div class="hint" id="status"></div>
   </div>
 
-  <div class="card">
-    <h2>安装根证书</h2>
-    <div class="hint">安卓：设置 → 安全 → 加密与凭据 → 安装证书 → CA 证书<br>
-Windows：双击 rootCA.crt，存储位置选「受信任的根证书颁发机构」<br>
-iOS：用描述文件安装后，到「设置 → 通用 → 关于本机 → 证书信任设置」里开启完全信任<br>
-浏览器单独信任：导入到浏览器的「受信任的根证书」列表即可</div>
+  <div class="card" id="cabox">
+    <label>根证书 · 自由签发 CA</label>
+    <div class="hint" id="ca_status">根证书固定唯一，有效期 20 年，保存后一直复用，不重新生成；下面的指纹就是唯一凭据。</div>
+    <div class="kv"><span>根证书名称</span><span id="caNameTxt">CN=FreeIssue Root CA, O=FreeIssue</span></div>
+    <div class="kv"><span>SHA-256 指纹</span><span id="ca_fp" style="word-break:break-all;text-align:right">—</span></div>
+    <div class="btnline" style="margin-top:12px">
+      <button class="ghost" id="dl_ca">下载根证书 rootCA.crt</button>
+    </div>
+    <div class="hint">安装位置：安卓「设置 → 安全 → 加密与凭据 → 安装证书 → CA 证书」；Windows 选「受信任的根证书颁发机构」；iOS 用描述文件安装后到「关于本机 → 证书信任设置」里开启。</div>
   </div>
 
-  <div class="card">
-    <h2>在服务器上启用 HTTPS</h2>
-    <div class="hint">把证书文件传到服务器（示例路径 /etc/ssl/webcat/），再按服务器类型套用配置。</div>
-    <pre>server {
-    listen 443 ssl;
-    server_name webcat.bbroot.com;
-
-    ssl_certificate     /etc/ssl/webcat/fullchain.pem;
-    ssl_certificate_key /etc/ssl/webcat/cert.key;
-    ssl_protocols       TLSv1.2 TLSv1.3;
-
-    location / {
-        root  /var/www/html;
-        index index.html;
-    }
-}
-
-server {
-    listen 80;
-    server_name webcat.bbroot.com;
-    return 301 https://$host$request_uri;
-}</pre>
-    <pre>&lt;VirtualHost *:443&gt;
-  ServerName webcat.bbroot.com
-  SSLEngine on
-  SSLCertificateFile    /etc/ssl/webcat/fullchain.pem
-  SSLCertificateKeyFile /etc/ssl/webcat/cert.key
-  DocumentRoot /var/www/html
-&lt;/VirtualHost&gt;</pre>
-    <div class="hint">改完先自检再重载：<b>nginx -t &amp;&amp; nginx -s reload</b>；<b>apachectl configtest &amp;&amp; systemctl reload httpd</b>。</div>
+  <div class="card" id="caabox">
+    <label>CAA 记录 · 放行公共 CA 签发</label>
+    <div class="hint">CAA 是告诉公共 CA「哪些 CA 可以给这个域名签发证书」的授权记录，只有公共 CA 在签发前会查它。本站的自建 CA 在浏览器本地签发，不查 CAA。<br>如果这个域名同时托管在 GitHub Pages，它的证书由 Let's Encrypt 签发，必须放行 <code>letsencrypt.org</code>，否则到期续签会被拦下。<br>注意：CAA 记录要写在根域（如 bbroot.com），CA 会从子域逐级向上找最近的记录；已经设成 CNAME 的域名不能再挂别的记录，所以不能写在 <code>webcat.bbroot.com</code> 上。</div>
+    <div class="kv"><span>主机记录</span><span>根域（如 bbroot.com），不要写在 CNAME 域名上</span></div>
+    <div class="kv"><span>记录类型</span><span>CAA</span></div>
+    <div class="kv"><span>记录值</span><span id="caa_val" style="word-break:break-all;text-align:right">0 issue "letsencrypt.org"</span></div>
+    <div class="btnline" style="margin-top:12px">
+      <button class="ghost" id="cp_caa">复制 CAA 记录值</button>
+    </div>
+    <div class="hint">值固定为标准写法，不随机、不重新生成。有的面板把 CAA 拆成三格：Flags 填 <code>0</code>、Tag 填 <code>issue</code>、Value 填 <code>letsencrypt.org</code>（Value 里不要带引号）。<br>注意 <code>0 issue ";"</code> 的含义是「不允许任何 CA」，不是放行全部。</div>
   </div>
 
-  <footer>自由签发 · 证书下载页面 · 作者 webcatx</footer>
+  <div class="card errbox" id="errbox"></div>
+
+  <div class="card out" id="outbox">
+    <div class="kv"><span>状态</span><span class="ok">签发成功</span></div>
+    <div class="kv"><span>域名</span><span id="o_domains"></span></div>
+    <div class="kv"><span>签发机构</span><span id="o_issuer"></span></div>
+    <div class="kv"><span>生效时间</span><span id="o_from"></span></div>
+    <div class="kv"><span>失效时间</span><span id="o_to"></span></div>
+    <div class="kv"><span>密钥</span><span id="o_bits"></span></div>
+    <div class="kv"><span>SHA-256 指纹</span><span id="o_fp" style="word-break:break-all;text-align:right"></span></div>
+
+    <div style="margin-top:16px">
+      <label>证书（cert.pem）</label>
+      <textarea id="cert" readonly></textarea>
+      <div class="btnline">
+        <button class="ghost" id="dl_cert">下载 cert.pem</button>
+        <button class="ghost" id="dl_chain">下载 fullchain.pem</button>
+        <button class="ghost" id="cp_cert">复制证书</button>
+      </div>
+    </div>
+
+    <div style="margin-top:16px">
+      <label>私钥（key.pem，务必自行保管）</label>
+      <textarea id="key" readonly></textarea>
+      <div class="btnline">
+        <button class="ghost" id="dl_key">下载 key.pem</button>
+        <button class="ghost" id="cp_key">复制私钥</button>
+      </div>
+    </div>
+
+    <div style="margin-top:16px">
+      <label>加密导出（PKCS#12 容器，推荐用于传输）</label>
+      <div style="display:flex;gap:10px;align-items:center">
+        <input id="p12pass" type="password" placeholder="设置导出口令（至少 6 位）" style="flex:1">
+        <button class="ghost" id="dl_p12">导出 .p12</button>
+      </div>
+      <div class="hint">容器内同时包含证书与私钥，必须用口令才能打开；传输走 HTTPS 或离线拷贝，不要明文发私钥。</div>
+    </div>
+
+    <div style="margin-top:16px">
+      <label>在你的服务器上启用 HTTPS</label>
+      <div class="hint">把 cert.pem 与 key.pem 传到服务器（示例路径 /etc/ssl/webcat/），再按服务器类型复制对应配置，把域名处替换成你签发的域名。</div>
+      <div style="margin-top:10px"><b>Nginx</b></div>
+      <textarea id="ngx_conf" readonly style="min-height:170px"></textarea>
+      <div class="btnline"><button class="ghost" id="cp_ngx">复制 Nginx 配置</button></div>
+      <div style="margin-top:10px"><b>Apache httpd</b></div>
+      <textarea id="apa_conf" readonly style="min-height:140px"></textarea>
+      <div class="btnline"><button class="ghost" id="cp_apa">复制 Apache 配置</button></div>
+      <div class="hint">改完先自检再重载：Nginx 用 <b>nginx -t &amp;&amp; nginx -s reload</b>；Apache 用 <b>apachectl configtest &amp;&amp; systemctl reload httpd</b>。证书是本站自建 CA 签的，客户端需要先装 rootCA.crt 才会显示为受信任。</div>
+    </div>
+  </div>
+
+  <div class="card" id="devbox">
+    <label>自动签发 · PHP（可选，给公共 CA 用）</label>
+    <div class="hint">本站签发是浏览器本地自签，不需要这条。只有你想让服务器自己向 Let's Encrypt 申请公开可信证书时才用。下面的代码摘自开源项目 <code>skoerfgen/ACMECert</code> v3.7.3 的官方 README（MIT 许可），本仓库 <code>php/acme/</code> 已原样收录该库源码；走 <code>dns-01</code> 验证，通配符证书也必须用 dns-01。</div>
+    <textarea id="php_code" readonly style="min-height:300px"><?php
+// 摘自 skoerfgen/ACMECert v3.7.3 的 README（MIT，Stefan Körfgen）
+require 'ACMECert.php';
+
+$ac=new ACMECert('https://acme-v02.api.letsencrypt.org/directory');
+$ac->loadAccountKey('file://'.'account_key.pem');
+
+$domain_config=array(
+  'example.com'=>array('challenge'=>'dns-01')
+);
+
+$handler=function($opts){
+  switch($opts['config']['challenge']){
+    case 'dns-01': // manual example:
+      echo 'Create DNS-TXT-Record '.$opts['key'].' with value '.$opts['value']."\n";
+      readline('Ready?');
+      return function($opts){
+        echo 'Remove DNS-TXT-Record '.$opts['key'].' with value '.$opts['value']."\n";
+      };
+    break;
+  }
+};
+
+$private_key=$ac->generateRSAKey(2048);
+$fullchain=$ac->getCertificateChain($private_key,$domain_config,$handler);
+file_put_contents('fullchain.pem',$fullchain);
+file_put_contents('private_key.pem',$private_key);
+</textarea>
+    <div class="btnline"><button class="ghost" id="cp_php">复制 PHP 示例</button></div>
+    <div class="hint">放行顺序：先在 DNS 里让 CAA 包含要用的 CA（Let's Encrypt 就是 <code>0 issue "letsencrypt.org"</code>），再跑脚本。CAA 不允许的 CA，验证会被直接拒绝。</div>
+
+    <div style="margin-top:14px"><b>CNAME 委托的正确写法</b></div>
+    <div class="hint">dns-01 要求把 TXT 放在 <code>_acme-challenge.你的域名</code>。如果你不想让签发服务器拿到整个域名的 DNS 权限，可以把这一步委托出去：</div>
+    <textarea id="cname_demo" readonly style="min-height:70px">_acme-challenge.example.com.  CNAME  你的委托名.acme-dns.example.org.</textarea>
+    <div class="btnline"><button class="ghost" id="cp_cname">复制 CNAME 示例</button></div>
+    <div class="hint">规则要点：<br>1. 这条 CNAME 只写一次，长期不变；每次续期变化的是委托目标那边的 TXT 内容<br>2. CNAME 不能和其他同名的 A / TXT / CAA 记录共存（DNS 规范限制，同名互斥）<br>3. 不要写成 TXT 记录，类型必须是 CNAME<br>4. 值末尾的点表示绝对域名，部分面板会自动补，按面板提示填即可</div>
+  </div>
+
+  <div class="card warnbox">
+    <b>使用说明</b><br>
+    1. 先在有效时长输入框填数字，再点「天 / 月 / 年」，下方会实时显示当前设置与预计到期时间。<br>
+    2. 点「签发证书」，直接在浏览器本地生成证书与私钥，不校验域名归属、不查任何 DNS 记录。<br>
+    3. 生成后页面显示域名、签发机构、生效时间与失效时间。签发前需要根证书就绪：点「下载根证书 rootCA.crt」，装进设备信任列表，本站签发的证书才会被系统信任；没装过的设备仍会提示不受信任。<br>
+4. 签发后结果区会给出 Nginx 与 Apache 的 HTTPS 配置，复制到服务器并重载即可开启 HTTPS。<br>
+    5. 传输证书优先用「加密导出」的 .p12（先设口令，至少 6 位），内含证书与私钥，必须口令才能打开，不要明文外发私钥。<br>
+    5. 证书与私钥全部在本机浏览器生成，不上传服务器，关闭页面即清除。
+  </div>
+
+  <footer><span id="footHost">webcat.bbroot.com</span> · 证书分发页面 · 生成过程完全在本地浏览器完成</footer>
 </div>
+
+<script src="forge.min.js"></script>
+<script>
+(function(){
+  // 域名统一从这里取：跟随当前访问地址，取不到时回落到 webcat.bbroot.com
+  var SITE = (function(){
+    var b = String(location.href).split('?')[0].split('#')[0].replace(/index\.html$/, '');
+    if(!/^http/.test(b)){ return 'https://webcat.bbroot.com/'; }
+    if(/localhost|127\.0\.0\.1|\[::1\]/.test(location.hostname)){ return 'https://webcat.bbroot.com/'; }
+    if(b.charAt(b.length-1) !== '/'){ b += '/'; }
+    return b;
+  })();
+  var ISSUER = SITE + '分发证书';
+  var $ = function(id){ return document.getElementById(id); };
+
+  function parseDomains(v){
+    return v.split(/[,\n，、]+/).map(function(s){ return s.trim(); }).filter(Boolean);
+  }
+  function isIP(s){
+    return /^(\d{1,3}\.){3}\d{1,3}$/.test(s);
+  }
+  function pad(n){ return n<10 ? '0'+n : ''+n; }
+  function fmt(d){
+    return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+
+           pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());
+  }
+  function addSpan(base, amount, unit){
+    var d = new Date(base.getTime());
+    if(unit === 'day'){ d.setDate(d.getDate()+amount); }
+    else if(unit === 'year'){ d.setFullYear(d.getFullYear()+amount); }
+    else { d.setMonth(d.getMonth()+amount); }
+    return d;
+  }
+  function unitLabel(unit){
+    return unit==='day' ? '天' : (unit==='year' ? '年' : '个月');
+  }
+
+  function setStatus(t){ $('status').textContent = t || ''; }
+  function showErr(t){
+    var b = $('errbox');
+    b.textContent = t;
+    b.style.display = 'block';
+  }
+  function hideErr(){ var b = $('errbox'); b.textContent = ''; b.style.display = 'none'; }
+
+  var LAST = null;
+  function downloadBytes(name, bytes, mime){
+    var u8 = new Uint8Array(bytes.length);
+    for(var i=0;i<bytes.length;i++){ u8[i] = bytes.charCodeAt(i); }
+    var blob = new Blob([u8], {type: mime});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 800);
+  }
+
+  function download(name, text, mime){
+    var blob = new Blob([text], {type: mime || 'application/x-pem-file'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 800);
+  }
+
+  function sha256hex(str){
+    var md = forge.md.sha256.create();
+    md.update(str);
+    return md.digest().toHex().toUpperCase().replace(/(.{2})/g, '$1:').replace(/:$/, '');
+  }
+
+  // ---- CAA 查询（阿里公共 DNS，支持跨域）----
+  function doh(name, type){
+    var url = 'https://dns.alidns.com/resolve?name=' + encodeURIComponent(name) + '&type=' + type + '&_=' + Date.now();
+    return fetch(url, {cache:'no-store'}).then(function(r){
+      if(!r.ok){ throw new Error('DNS 接口返回 ' + r.status); }
+      return r.json();
+    });
+  }
+  function findCAA(domain){
+    var name = String(domain).replace(/^\*\./, '').replace(/\.$/, '');
+    if(!name || name.indexOf('.') < 0){ return Promise.resolve(null); }
+    return doh(name, 257).then(function(d){
+      var list = (d.Answer || []).filter(function(x){ return String(x.type) === '257'; });
+      if(list.length){ return {name:name, records:list.map(function(x){ return String(x.data); })}; }
+      return findParentCAA(name.slice(name.indexOf('.') + 1), 0);
+    });
+  }
+  function findParentCAA(name, depth){
+    if(depth > 3 || name.indexOf('.') < 0){ return Promise.resolve(null); }
+    return doh(name, 257).then(function(d){
+      var list = (d.Answer || []).filter(function(x){ return String(x.type) === '257'; });
+      if(list.length){ return {name:name, records:list.map(function(x){ return String(x.data); })}; }
+      return findParentCAA(name.slice(name.indexOf('.') + 1), depth + 1);
+    });
+  }
+  function caaGate(domains){
+    var lines = [];
+    var chain = Promise.resolve();
+    domains.forEach(function(d){
+      if(isIP(d)){ return; }
+      chain = chain.then(function(){
+        setStatus('正在查询 ' + d + ' 的 CAA 记录…');
+        return findCAA(d).then(function(res){
+          if(!res){ var e = new Error('NOCAA'); e.domain = d; throw e; }
+          lines.push(res.name + '  →  ' + res.records.join(' ； '));
+        });
+      });
+    });
+    return chain.then(function(){
+      if($('caa_info')){ $('caa_info').textContent = lines.join('\n'); }
+      return true;
+    });
+  }
+
+  function sign(){
+    hideErr();
+    var domains = parseDomains($('domains').value);
+    if(!domains.length){ showErr('请先填写要签发的域名。'); return; }
+    if($('caa_info')){ $('caa_info').textContent = ''; }
+    if(!$('caacheck') || !$('caacheck').checked){ setStatus(''); issue(); return; }
+    caaGate(domains).then(function(){
+      setStatus('CAA 记录已查到，开始签发…');
+      issue();
+    }).catch(function(e){
+      var d = e && e.domain ? e.domain : '';
+      if(d){ showErr('没有查到 ' + d + ' 的 CAA 记录，已停止签发。请先在 DNS 面板添加一条：类型 CAA、主机记录 ' + d + '、值 0 issue "letsencrypt.org"，解析生效后再点签发。'); }
+      else { showErr('CAA 查询失败：' + (e && e.message ? e.message : '网络不可用') + '，已停止签发。'); }
+      setStatus('');
+    });
+  }
+
+  var CA_KEY = 'webcat_free_ca_key', CA_CERT = 'webcat_free_ca_crt';
+  var CA_DN_CN = 'FreeIssue Root CA';
+  var CA_DN_O = 'FreeIssue';
+
+  function buildCA(){
+    var U = forge.asn1.Type.UTF8;
+    var keys = forge.pki.rsa.generateKeyPair({bits:2048, e:0x10001});
+    var cert = forge.pki.createCertificate();
+    cert.publicKey = keys.publicKey;
+    cert.serialNumber = '01' + forge.util.bytesToHex(forge.random.getBytesSync(15)).toUpperCase();
+    var nb = new Date(); nb.setDate(nb.getDate()-1);
+    var na = new Date(); na.setFullYear(na.getFullYear()+20);
+    cert.validity.notBefore = nb;
+    cert.validity.notAfter = na;
+    cert.setSubject([{name:'commonName', value:CA_DN_CN, valueTagClass:U},
+                     {name:'organizationName', value:CA_DN_O, valueTagClass:U}]);
+    cert.setIssuer([{name:'commonName', value:CA_DN_CN, valueTagClass:U},
+                    {name:'organizationName', value:CA_DN_O, valueTagClass:U}]);
+    cert.setExtensions([
+      {name:'basicConstraints', cA:true, critical:true},
+      {name:'keyUsage', keyCertSign:true, cRLSign:true, critical:true},
+      {name:'subjectKeyIdentifier'}
+    ]);
+    cert.sign(keys.privateKey, forge.md.sha256.create());
+    var kp = forge.pki.privateKeyToPem(keys.privateKey);
+    var cp = forge.pki.certificateToPem(cert);
+    try{ localStorage.setItem(CA_KEY, kp); localStorage.setItem(CA_CERT, cp); }catch(e){}
+    return {key:keys.privateKey, cert:cert};
+  }
+
+  function ensureCA(){
+    var k=null, c=null;
+    try{ k = localStorage.getItem(CA_KEY); c = localStorage.getItem(CA_CERT); }catch(e){}
+    if(k && c){
+      try{ return {key:forge.pki.privateKeyFromPem(k), cert:forge.pki.certificateFromPem(c)}; }catch(e){}
+    }
+    return buildCA();
+  }
+
+  function caFingerprint(cert){
+    var md = forge.md.sha256.create();
+    md.update(forge.pki.certificateToPem(cert));
+    return md.digest().toHex().toUpperCase().match(/.{2}/g).join(':');
+  }
+
+  function refreshCA(){
+    var ca;
+    try{ ca = ensureCA(); }catch(e){ return; }
+    $('ca_fp').textContent = caFingerprint(ca.cert);
+    $('ca_status').textContent = '根证书已就绪（有效期 20 年）。装进系统后，本站签发的证书就会被信任。';
+  }
+
+  var UNIT = 'day';
+  function refreshPreview(){
+    var amount = parseInt($('amount').value, 10);
+    if(!(amount >= 1)){ $('preview').textContent = '请输入大于 0 的数字'; return; }
+    var na = addSpan(new Date(), amount, UNIT);
+    $('preview').textContent = '当前设置：' + amount + ' ' + unitLabel(UNIT) + '，到期时间约 ' + fmt(na).slice(0,10);
+  }
+
+  function confTpl(d0){
+    var ngx = 'server {\n' +
+      '    listen 443 ssl;\n' +
+      '    server_name ' + d0 + ';\n\n' +
+      '    ssl_certificate     /etc/ssl/webcat/cert.pem;\n' +
+      '    ssl_certificate_key /etc/ssl/webcat/key.pem;\n' +
+      '    ssl_protocols       TLSv1.2 TLSv1.3;\n\n' +
+      '    location / {\n        root  /var/www/html;\n        index index.html;\n    }\n}\n\n' +
+      'server {\n    listen 80;\n    server_name ' + d0 + ';\n    return 301 https://$host$request_uri;\n}\n';
+    var apa = '<VirtualHost *:443>\n' +
+      '  ServerName ' + d0 + '\n' +
+      '  SSLEngine on\n' +
+      '  SSLCertificateFile    /etc/ssl/webcat/cert.pem\n' +
+      '  SSLCertificateKeyFile /etc/ssl/webcat/key.pem\n' +
+      '  DocumentRoot /var/www/html\n' +
+      '</VirtualHost>\n';
+    return {ngx:ngx, apa:apa};
+  }
+
+  function issue(){
+    hideErr();
+    $('outbox').style.display='none';
+    var domains = parseDomains($('domains').value);
+    if(!domains.length){ showErr('请至少填写一个域名。'); return; }
+    var amount = parseInt($('amount').value, 10);
+    var unit = UNIT;
+    var bits = parseInt($('bits').value, 10);
+    if(!(amount >= 1)){ showErr('有效时长必须是大于 0 的整数。'); return; }
+    if(unit === 'year' && amount > 100){ showErr('年数过大，请填 100 以内。'); return; }
+
+    $('go').disabled = true;
+    setStatus('正在生成 RSA 私钥（'+bits+' 位），请稍候…');
+
+    setTimeout(async function(){
+      try{
+        var keys = forge.pki.rsa.generateKeyPair({bits: bits, e: 0x10001});
+
+        var notBefore = new Date();
+        notBefore.setDate(notBefore.getDate()-1);
+        var notAfter = addSpan(new Date(), amount, unit);
+        var serial = forge.util.bytesToHex(forge.random.getBytesSync(18)).toUpperCase();
+
+        var U = forge.asn1.Type.UTF8;
+        var ca = ensureCA();
+        var raw = domains[0];
+        var dnSubject = [
+          {name:'commonName', value: raw, valueTagClass: U},
+          {name:'organizationName', value: 'FreeIssue', valueTagClass: U}
+        ];
+
+        var cert = forge.pki.createCertificate();
+        cert.publicKey = keys.publicKey;
+        cert.serialNumber = serial;
+        cert.validity.notBefore = notBefore;
+        cert.validity.notAfter = notAfter;
+        cert.setSubject(dnSubject);
+        cert.setIssuer(ca.cert.subject.attributes);
+
+        var altNames = domains.map(function(d){
+          return isIP(d) ? {type:7, ip:d} : {type:2, value:d};
+        });
+        cert.setExtensions([
+          {name:'basicConstraints', cA:false},
+          {name:'keyUsage', digitalSignature:true, keyEncipherment:true, critical:true},
+          {name:'extKeyUsage', serverAuth:true},
+          {name:'subjectAltName', altNames:altNames},
+          {name:'subjectKeyIdentifier'}
+        ]);
+
+        cert.sign(ca.key, forge.md.sha256.create());
+
+        LAST = {privateKey: keys.privateKey, cert: cert};
+        var certPem = forge.pki.certificateToPem(cert);
+        var keyPem = forge.pki.privateKeyToPem(keys.privateKey);
+
+        $('cert').value = certPem;
+        $('key').value = keyPem;
+        $('o_domains').textContent = domains.join(', ');
+        $('o_issuer').textContent = ISSUER;
+        $('o_from').textContent = fmt(notBefore);
+        $('o_to').textContent = fmt(notAfter) + '（'+amount+' '+unitLabel(unit)+'）';
+        $('o_bits').textContent = 'RSA '+bits;
+        $('o_fp').textContent = sha256hex(certPem);
+        var cf = confTpl(domains[0]);
+        $('ngx_conf').value = cf.ngx;
+        $('apa_conf').value = cf.apa;
+        $('outbox').style.display = 'block';
+        setStatus('签发完成，已生成证书与私钥。');
+        $('outbox').scrollIntoView({behavior:'smooth', block:'start'});
+      }catch(e){
+        showErr('生成失败：'+(e && e.message ? e.message : e));
+        setStatus('');
+      }finally{
+        $('go').disabled = false;
+      }
+    }, 30);
+  }
+
+  (function syncDomain(){
+    var txt = ISSUER;
+    var el;
+    if(el = $('issuerTxt')){ el.textContent = txt; }
+    if(el = $('caNameTxt')){ el.textContent = 'CN=FreeIssue Root CA, O=FreeIssue'; }
+    if(el = $('footHost')){ el.textContent = SITE.replace(/^https?:\/\//,'').replace(/\/$/,''); }
+  })();
+
+  $('go').addEventListener('click', sign);
+  $('amount').addEventListener('input', refreshPreview);
+  Array.prototype.forEach.call(document.querySelectorAll('.unit'), function(b){
+    b.addEventListener('click', function(){
+      UNIT = b.getAttribute('data-u');
+      Array.prototype.forEach.call(document.querySelectorAll('.unit'), function(x){ x.classList.remove('on'); });
+      b.classList.add('on');
+      refreshPreview();
+    });
+  });
+  (function(){
+    var h = location.hostname;
+    if(h && h !== 'localhost' && h !== '127.0.0.1' && !$('domains').value){ $('domains').value = h; }
+  })();
+  setTimeout(refreshPreview, 50);
+  $('dl_ca').addEventListener('click', function(){
+    var ca = ensureCA();
+    download('rootCA.crt', forge.pki.certificateToPem(ca.cert), 'application/x-x509-ca-cert');
+    setStatus('已下载根证书 rootCA.crt，请在设备里安装。');
+  });
+  setTimeout(refreshCA, 50);
+  function copyArea(id, msg){
+    var el = $(id); el.select();
+    if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(el.value).then(function(){ setStatus(msg); }); }
+    else { document.execCommand('copy'); setStatus(msg); }
+  }
+  $('cp_php').addEventListener('click', function(){ copyArea('php_code', 'PHP 示例已复制'); });
+  $('cp_cname').addEventListener('click', function(){ copyArea('cname_demo', 'CNAME 示例已复制'); });
+  $('cp_caa').addEventListener('click', function(){
+    var v = $('caa_val').textContent;
+    if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(v).then(function(){ setStatus('CAA 记录值已复制'); }); }
+    else { setStatus('CAA 记录值：' + v); }
+  });
+  $('cp_ngx').addEventListener('click', function(){
+    if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText($('ngx_conf').value).then(function(){ setStatus('Nginx 配置已复制'); }); }
+    else { $('ngx_conf').select(); document.execCommand('copy'); setStatus('Nginx 配置已复制'); }
+  });
+  $('cp_apa').addEventListener('click', function(){
+    if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText($('apa_conf').value).then(function(){ setStatus('Apache 配置已复制'); }); }
+    else { $('apa_conf').select(); document.execCommand('copy'); setStatus('Apache 配置已复制'); }
+  });
+  $('dl_cert').addEventListener('click', function(){ download('cert.pem', $('cert').value); });
+  $('dl_chain').addEventListener('click', function(){
+    var c = $('cert').value, root = forge.pki.certificateToPem(ensureCA().cert);
+    if(!c){ showErr('请先签发证书。'); return; }
+    download('fullchain.pem', c.replace(/\s+$/,'') + '\n' + root.replace(/\s+$/,'') + '\n');
+  });
+  $('dl_key').addEventListener('click', function(){ download('key.pem', $('key').value); });
+  $('dl_p12').addEventListener('click', function(){
+    if(!LAST){ showErr('请先签发证书。'); return; }
+    var pass = $('p12pass').value || '';
+    if(pass.length < 6){ showErr('导出口令至少 6 位。'); return; }
+    try{
+      var p12 = forge.pkcs12.toPkcs12Asn1(LAST.privateKey, [LAST.cert], pass, {algorithm:'3des'});
+      downloadBytes('webcat.p12', forge.asn1.toDer(p12).getBytes(), 'application/x-pkcs12');
+      setStatus('已导出加密容器 webcat.p12，请记好口令。');
+    }catch(e){
+      showErr('导出失败：'+(e && e.message ? e.message : e));
+    }
+  });
+  $('cp_cert').addEventListener('click', function(){
+    navigator.clipboard.writeText($('cert').value).then(function(){ setStatus('证书已复制'); });
+  });
+  $('cp_key').addEventListener('click', function(){
+    navigator.clipboard.writeText($('key').value).then(function(){ setStatus('私钥已复制'); });
+  });
+})();
+</script>
 </body>
 </html>
