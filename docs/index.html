@@ -171,7 +171,8 @@
       </div>
     </div>
 
-    <div style="margin-top:18px"><button id="go">生成证书</button></div>
+    <div style="margin-top:18px"><button id="go">生成证书</button>
+      <button class="ghost" id="useLocal" style="display:none;width:100%;margin-top:10px;justify-content:center">改用「自由签发」在本页生成本地证书</button></div>
     <div class="hint" id="status"></div>
   </div>
 
@@ -559,28 +560,33 @@ file_put_contents('private_key.pem',$private_key);
     if(el = $('footHost')){ el.textContent = SITE.replace(/^https?:\/\//,'').replace(/\/$/,''); }
   })();
 
-  var ISSUER_CHOICE = 'local';
+  var ISSUER_CHOICE = 'le';
   var ISSUER_NOTE = {
     local: '当前选择：自由签发（Free Issuance），证书在本页本地生成，到期日由你选。装过 rootCA.crt 的设备才信任。',
     le: '当前选择：Let\u2019s Encrypt（公共 CA）。证书由该机构签发，固定 90 天，不能自选到期日，需要 HTTP-01 或 DNS-01 域名验证。申请方式：用本仓库 php/acme（ACMECert v3.7.3）走 ACME v2，或用 freessl.cloud 这类工具选 Let\u2019s Encrypt。根域 CAA 需放行 0 issue letsencrypt.org。',
     zero: '当前选择：ZeroSSL（公共 CA）。证书由 ZeroSSL 签发，90 天，不能自选到期日，需要域名验证（HTTP 或 DNS TXT）。申请方式：zerossl.com 控制台，或用 ACME 客户端走 ZeroSSL 的 ACME 入口。',
     google: '当前选择：Google Cloud（Google Trust Services，公共 CA）。证书由 Google 签发，90 天，不能自选到期日，需要域名验证。申请方式：Google Trust Services 的 ACME 入口（pki.goog），需先具备相应账号资质。'
   };
+  function selectIssuer(k){
+    var el = document.querySelector('.iss[data-k="' + k + '"]');
+    if(!el){ return; }
+    Array.prototype.forEach.call(document.querySelectorAll('.iss'), function(x){ x.classList.remove('on'); });
+    el.classList.add('on');
+    ISSUER_CHOICE = k;
+    $('iss_note').textContent = ISSUER_NOTE[k];
+    var local = k === 'local';
+    $('go').disabled = !local;
+    $('go').textContent = local ? '生成证书' : '该 CA 需外部申请';
+    $('useLocal').style.display = local ? 'none' : 'block';
+    $('enddate').disabled = !local;
+    if(!local){ $('preview').textContent = '到期时间：由该 CA 决定，不能自选'; }
+    else { refreshPreview(); }
+    setStatus('');
+  }
   Array.prototype.forEach.call(document.querySelectorAll('.iss'), function(el){
-    el.addEventListener('click', function(){
-      Array.prototype.forEach.call(document.querySelectorAll('.iss'), function(x){ x.classList.remove('on'); });
-      el.classList.add('on');
-      ISSUER_CHOICE = el.getAttribute('data-k');
-      $('iss_note').textContent = ISSUER_NOTE[ISSUER_CHOICE];
-      var local = ISSUER_CHOICE === 'local';
-      $('go').disabled = !local;
-      $('go').textContent = local ? '生成证书' : '该 CA 需外部申请';
-      $('enddate').disabled = !local;
-      if(!local){ $('preview').textContent = '到期时间：由该 CA 决定，不能自选'; }
-      else { refreshPreview(); }
-      setStatus('');
-    });
+    el.addEventListener('click', function(){ selectIssuer(el.getAttribute('data-k')); });
   });
+  $('useLocal').addEventListener('click', function(){ selectIssuer('local'); });
   $('go').addEventListener('click', startGenerate);
   (function(){
     var d = new Date(); d.setDate(d.getDate()+365);
@@ -593,7 +599,7 @@ file_put_contents('private_key.pem',$private_key);
     var h = location.hostname;
     if(h && h !== 'localhost' && h !== '127.0.0.1' && !$('domains').value){ $('domains').value = h; }
   })();
-  setTimeout(refreshPreview, 50);
+  setTimeout(function(){ selectIssuer(ISSUER_CHOICE); }, 30);
   $('dl_ca').addEventListener('click', function(){
     var ca = ensureCA();
     download('rootCA.crt', forge.pki.certificateToPem(ca.cert), 'application/x-x509-ca-cert');
