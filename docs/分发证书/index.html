@@ -53,7 +53,7 @@
 <div class="wrap">
   <span class="tag">自由签发 · SSL 证书分发</span>
   <h1>自由签发</h1>
-  <p class="sub">由本站自建的根证书（自由签发 CA）为你的域名签发证书，有效期可自定义。先在设备里安装一次根证书，之后签发的证书就会被系统信任。签发机构标识为 <code>https://webcat.bbroot.com/分发证书</code>。</p>
+  <p class="sub">由本站自建的根证书（自由签发 CA）为你的域名签发证书，有效期可自定义。先在设备里安装一次根证书，之后签发的证书就会被系统信任。签发机构标识为 <code id="issuerTxt">https://webcat.bbroot.com/分发证书</code>。</p>
 
   <div class="card">
     <label>域名（多个用换行或逗号分隔）</label>
@@ -88,7 +88,7 @@
   <div class="card" id="cabox">
     <label>根证书 · 自由签发 CA</label>
     <div class="hint" id="ca_status">首次使用会在这台设备生成一张有效期 20 年的根证书，保存在本机浏览器里，重复使用同一张。</div>
-    <div class="kv"><span>根证书名称</span><span>CN=https://webcat.bbroot.com/分发证书, O=自由签发</span></div>
+    <div class="kv"><span>根证书名称</span><span id="caNameTxt">CN=https://webcat.bbroot.com/分发证书, O=自由签发</span></div>
     <div class="kv"><span>SHA-256 指纹</span><span id="ca_fp" style="word-break:break-all;text-align:right">—</span></div>
     <div class="btnline" style="margin-top:12px">
       <button class="ghost" id="dl_ca">下载根证书 rootCA.crt</button>
@@ -158,13 +158,21 @@
     5. 证书与私钥全部在本机浏览器生成，不上传服务器，关闭页面即清除。
   </div>
 
-  <footer>webcat.bbroot.com · 证书分发页面 · 生成过程完全在本地浏览器完成</footer>
+  <footer><span id="footHost">webcat.bbroot.com</span> · 证书分发页面 · 生成过程完全在本地浏览器完成</footer>
 </div>
 
 <script src="forge.min.js"></script>
 <script>
 (function(){
-  var ISSUER = 'https://webcat.bbroot.com/分发证书';
+  // 域名统一从这里取：跟随当前访问地址，取不到时回落到 webcat.bbroot.com
+  var SITE = (function(){
+    var b = String(location.href).split('?')[0].split('#')[0].replace(/index\.html$/, '');
+    if(!/^http/.test(b)){ return 'https://webcat.bbroot.com/'; }
+    if(/localhost|127\.0\.0\.1|\[::1\]/.test(location.hostname)){ return 'https://webcat.bbroot.com/'; }
+    if(b.charAt(b.length-1) !== '/'){ b += '/'; }
+    return b;
+  })();
+  var ISSUER = SITE + '分发证书';
   var $ = function(id){ return document.getElementById(id); };
 
   function parseDomains(v){
@@ -234,7 +242,7 @@
   }
 
   var CA_KEY = 'webcat_free_ca_key', CA_CERT = 'webcat_free_ca_crt';
-  var CA_DN_CN = 'https://webcat.bbroot.com/分发证书';
+  var CA_DN_CN = ISSUER;
   var CA_DN_O = '自由签发';
 
   function buildCA(){
@@ -390,6 +398,14 @@
       }
     }, 30);
   }
+
+  (function syncDomain(){
+    var txt = ISSUER;
+    var el;
+    if(el = $('issuerTxt')){ el.textContent = txt; }
+    if(el = $('caNameTxt')){ el.textContent = 'CN=' + txt + ', O=自由签发'; }
+    if(el = $('footHost')){ el.textContent = SITE.replace(/^https?:\/\//,'').replace(/\/$/,''); }
+  })();
 
   $('go').addEventListener('click', sign);
   $('amount').addEventListener('input', refreshPreview);
