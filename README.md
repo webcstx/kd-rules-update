@@ -13,10 +13,6 @@
 3. 点击【生成证书】
 4. 下载文件：rootCA.crt、cert.pem、fullchain.pem、私钥key.pem
 
-## 部署Nginx HTTPS示例
-```nginx
-ssl_certificate     fullchain.pem;
-ssl_certificate_key key.pem;
 ## 星级历史
 
 <a href="https://star-history.com/#webcstx/doubao-quick-tools&Date">
