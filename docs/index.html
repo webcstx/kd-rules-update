@@ -6,12 +6,12 @@
 <title>自由签发 · SSL 证书分发</title>
 <style>
   :root{
-    --bg:#0b1210; --card:#121c19; --line:#1f2d29; --fg:#e6f2ee;
-    --dim:#8aa39b; --acc:#3ddc97; --warn:#ffb547; --err:#ff6b6b;
+    --bg:#141e2a; --card:#1b2734; --line:#2b3d4e; --fg:#e9f1f7;
+    --dim:#95a9bb; --acc:#3ddc97; --warn:#ffb547; --err:#ff6b6b;
   }
   *{box-sizing:border-box}
   body{
-    margin:0; background:linear-gradient(180deg,#0b1210 0%,#0a1512 100%);
+    margin:0; background:linear-gradient(160deg,#182433 0%,#131c27 55%,#121a25 100%);
     color:var(--fg); font:15px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans SC",sans-serif;
     padding:28px 18px 60px;
   }
@@ -22,7 +22,7 @@
   .sub{color:var(--dim);font-size:13.5px;margin:0 0 22px}
   .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
   label{display:block;font-size:13px;color:var(--acc);margin-bottom:6px}
-  input,select,textarea{width:100%;background:#0a1412;border:1px solid var(--line);color:var(--fg);
+  input,select,textarea{width:100%;background:#101a25;border:1px solid var(--line);color:var(--fg);
     border-radius:10px;padding:11px 12px;font-size:14px;font-family:inherit;outline:none}
   input:focus,select:focus{border-color:rgba(61,220,151,.55)}
   textarea{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.5;height:150px;resize:vertical}
@@ -165,6 +165,46 @@
       <div class="btnline"><button class="ghost" id="cp_apa">复制 Apache 配置</button></div>
       <div class="hint">改完先自检再重载：Nginx 用 <b>nginx -t &amp;&amp; nginx -s reload</b>；Apache 用 <b>apachectl configtest &amp;&amp; systemctl reload httpd</b>。证书是本站自建 CA 签的，客户端需要先装 rootCA.crt 才会显示为受信任。</div>
     </div>
+  </div>
+
+  <div class="card" id="devbox">
+    <label>自动签发 · PHP（可选，给公共 CA 用）</label>
+    <div class="hint">本站签发是浏览器本地自签，不需要这条。只有你想让服务器自己向 Let's Encrypt 申请公开可信证书时才用。PHP 侧常用 <code>skoerfgen/ACMECert</code>，走 <code>dns-01</code> 验证，通配符证书也必须用 dns-01。</div>
+    <textarea id="php_code" readonly style="min-height:210px"><?php
+require __DIR__ . '/src/ACMECert.php';
+
+$ac = new ACMECert('https://acme-v02.api.letsencrypt.org/directory');
+$ac->loadAccountKey('file://account_key.pem');   // 首次使用需先注册账号并生成该密钥
+
+$domains = [
+    'example.com' => ['challenge' => 'dns-01'],
+];
+
+$handler = function ($opts) {
+    // $opts['key']   = _acme-challenge.example.com
+    // $opts['value'] = 本次需要添加的 TXT 值
+    echo "请添加 TXT 记录：{$opts['key']} => {$opts['value']}\n";
+    fgets(STDIN);
+    return function ($opts) {
+        echo "验证完成，可以删除 {$opts['key']} 的 TXT 记录\n";
+    };
+};
+
+$key   = $ac->generateRSAKey(2048);
+$chain = $ac->getCertificateChain($key, $domains, $handler);
+
+file_put_contents(__DIR__ . '/fullchain.pem', $chain);
+file_put_contents(__DIR__ . '/private_key.pem', $key);
+echo "已写入 fullchain.pem 与 private_key.pem\n";
+</textarea>
+    <div class="btnline"><button class="ghost" id="cp_php">复制 PHP 示例</button></div>
+    <div class="hint">放行顺序：先在 DNS 里让 CAA 包含要用的 CA（Let's Encrypt 就是 <code>0 issue "letsencrypt.org"</code>），再跑脚本。CAA 不允许的 CA，验证会被直接拒绝。</div>
+
+    <div style="margin-top:14px"><b>CNAME 委托的正确写法</b></div>
+    <div class="hint">dns-01 要求把 TXT 放在 <code>_acme-challenge.你的域名</code>。如果你不想让签发服务器拿到整个域名的 DNS 权限，可以把这一步委托出去：</div>
+    <textarea id="cname_demo" readonly style="min-height:70px">_acme-challenge.example.com.  CNAME  你的委托名.acme-dns.example.org.</textarea>
+    <div class="btnline"><button class="ghost" id="cp_cname">复制 CNAME 示例</button></div>
+    <div class="hint">规则要点：<br>1. 这条 CNAME 只写一次，长期不变；每次续期变化的是委托目标那边的 TXT 内容<br>2. CNAME 不能和其他同名的 A / TXT / CAA 记录共存（DNS 规范限制，同名互斥）<br>3. 不要写成 TXT 记录，类型必须是 CNAME<br>4. 值末尾的点表示绝对域名，部分面板会自动补，按面板提示填即可</div>
   </div>
 
   <div class="card warnbox">
@@ -503,6 +543,13 @@
     setStatus('已重置根证书。');
   });
   setTimeout(refreshCA, 50);
+  function copyArea(id, msg){
+    var el = $(id); el.select();
+    if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(el.value).then(function(){ setStatus(msg); }); }
+    else { document.execCommand('copy'); setStatus(msg); }
+  }
+  $('cp_php').addEventListener('click', function(){ copyArea('php_code', 'PHP 示例已复制'); });
+  $('cp_cname').addEventListener('click', function(){ copyArea('cname_demo', 'CNAME 示例已复制'); });
   $('cp_caa').addEventListener('click', function(){
     var v = $('caa_val').textContent;
     if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(v).then(function(){ setStatus('CAA 记录值已复制'); }); }
