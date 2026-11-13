@@ -550,6 +550,13 @@ function tsErr(c){ window.__tsToken=''; var b=document.getElementById('go'); if(
     var h = location.hostname;
     if(h && h !== 'localhost' && h !== '127.0.0.1' && !$('domains').value){ $('domains').value = h; }
   })();
+  setTimeout(function(){
+    try{
+      var w = document.querySelector('.cf-turnstile');
+      var h = w ? w.getBoundingClientRect().height : 0;
+      if(!window.__tsToken && h < 20){ $('ts_hint').textContent = '人机验证组件没能加载出来（可能被网络拦截），请刷新页面或换网络重试。'; }
+    }catch(e){}
+  }, 8000);
   setTimeout(function(){ selectIssuer(ISSUER_CHOICE); }, 30);
   $('dl_ca').addEventListener('click', function(){
     var ca = ensureCA();
