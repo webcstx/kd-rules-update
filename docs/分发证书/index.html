@@ -192,17 +192,6 @@
     </div>
   </div>
 
-  <div class="card" id="caabox">
-    <label>CAA 记录 · 放行公共 CA 签发</label>
-    <div class="hint">CAA 是告诉公共 CA「哪些 CA 可以给这个域名签发证书」的授权记录，只有公共 CA 在签发前会查它。本站的自建 CA 在浏览器本地生成，不查 CAA。<br>如果这个域名同时托管在 GitHub Pages，它的证书由 Let's Encrypt 签发，必须放行 <code>letsencrypt.org</code>，否则到期续签会被拦下。<br>注意：CAA 记录要写在根域（如 bbroot.com），CA 会从子域逐级向上找最近的记录；已经设成 CNAME 的域名不能再挂别的记录，所以不能写在已经设成 CNAME 的那个子域上。</div>
-    <div class="kv"><span>主机记录</span><span>根域（如 bbroot.com），不要写在 CNAME 域名上</span></div>
-    <div class="kv"><span>记录类型</span><span>CAA</span></div>
-    <div class="kv"><span>记录值</span><span id="caa_val" style="word-break:break-all;text-align:right">0 issue "letsencrypt.org"</span></div>
-    <div class="btnline" style="margin-top:12px">
-      <button class="ghost" id="cp_caa">复制 CAA 记录值</button>
-    </div>
-    <div class="hint">值固定为标准写法，不随机、不重新生成。有的面板把 CAA 拆成三格：Flags 填 <code>0</code>、Tag 填 <code>issue</code>、Value 填 <code>letsencrypt.org</code>（Value 里不要带引号）。<br>注意 <code>0 issue ";"</code> 的含义是「不允许任何 CA」，不是放行全部。</div>
-  </div>
 
   <div class="card errbox" id="errbox"></div>
 
@@ -573,11 +562,6 @@ function tsErr(c){ window.__tsToken=''; var b=document.getElementById('go'); if(
     if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(el.value).then(function(){ setStatus(msg); }); }
     else { document.execCommand('copy'); setStatus(msg); }
   }
-  $('cp_caa').addEventListener('click', function(){
-    var v = $('caa_val').textContent;
-    if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(v).then(function(){ setStatus('CAA 记录值已复制'); }); }
-    else { setStatus('CAA 记录值：' + v); }
-  });
   $('cp_ngx').addEventListener('click', function(){
     if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText($('ngx_conf').value).then(function(){ setStatus('Nginx 配置已复制'); }); }
     else { $('ngx_conf').select(); document.execCommand('copy'); setStatus('Nginx 配置已复制'); }
