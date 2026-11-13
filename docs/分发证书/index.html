@@ -251,47 +251,6 @@
     </div>
   </div>
 
-  <div class="card" id="devbox">
-    <label>自动签发 · PHP（可选，给公共 CA 用）</label>
-    <div class="hint">本站是在浏览器本地生成证书，不需要这条。只有你想让服务器自己向 Let's Encrypt 申请公开可信证书时才用。下面的代码摘自开源项目 <code>skoerfgen/ACMECert</code> v3.7.3 的官方 README（MIT 许可），本仓库 <code>php/acme/</code> 已原样收录该库源码；走 <code>dns-01</code> 验证，通配符证书也必须用 dns-01。</div>
-    <textarea id="php_code" readonly style="min-height:300px"><?php
-// 摘自 skoerfgen/ACMECert v3.7.3 的 README（MIT，Stefan Körfgen）
-require 'ACMECert.php';
-
-$ac=new ACMECert('https://acme-v02.api.letsencrypt.org/directory');
-$ac->loadAccountKey('file://'.'account_key.pem');
-
-$domain_config=array(
-  'example.com'=>array('challenge'=>'dns-01')
-);
-
-$handler=function($opts){
-  switch($opts['config']['challenge']){
-    case 'dns-01': // manual example:
-      echo 'Create DNS-TXT-Record '.$opts['key'].' with value '.$opts['value']."\n";
-      readline('Ready?');
-      return function($opts){
-        echo 'Remove DNS-TXT-Record '.$opts['key'].' with value '.$opts['value']."\n";
-      };
-    break;
-  }
-};
-
-$private_key=$ac->generateRSAKey(2048);
-$fullchain=$ac->getCertificateChain($private_key,$domain_config,$handler);
-file_put_contents('fullchain.pem',$fullchain);
-file_put_contents('private_key.pem',$private_key);
-</textarea>
-    <div class="btnline"><button class="ghost" id="cp_php">复制 PHP 示例</button></div>
-    <div class="hint">放行顺序：先在 DNS 里让 CAA 包含要用的 CA（Let's Encrypt 就是 <code>0 issue "letsencrypt.org"</code>），再跑脚本。CAA 不允许的 CA，验证会被直接拒绝。</div>
-
-    <div style="margin-top:14px"><b>CNAME 委托的正确写法</b></div>
-    <div class="hint">dns-01 要求把 TXT 放在 <code>_acme-challenge.你的域名</code>。如果你不想让签发服务器拿到整个域名的 DNS 权限，可以把这一步委托出去：</div>
-    <textarea id="cname_demo" readonly style="min-height:70px">_acme-challenge.example.com.  CNAME  你的委托名.acme-dns.example.org.</textarea>
-    <div class="btnline"><button class="ghost" id="cp_cname">复制 CNAME 示例</button></div>
-    <div class="hint">规则要点：<br>1. 这条 CNAME 只写一次，长期不变；每次续期变化的是委托目标那边的 TXT 内容<br>2. CNAME 不能和其他同名的 A / TXT / CAA 记录共存（DNS 规范限制，同名互斥）<br>3. 不要写成 TXT 记录，类型必须是 CNAME<br>4. 值末尾的点表示绝对域名，部分面板会自动补，按面板提示填即可</div>
-  </div>
-
   <div class="card warnbox">
     <b>使用说明</b><br>
     1. 先在有效时长输入框填数字，再点「天 / 月 / 年」，下方会实时显示当前设置与预计到期时间。<br>
@@ -563,7 +522,7 @@ file_put_contents('private_key.pem',$private_key);
   var ISSUER_CHOICE = 'le';
   var ISSUER_NOTE = {
     local: '当前选择：自由签发（Free Issuance），证书在本页本地生成，到期日由你选。装过 rootCA.crt 的设备才信任。',
-    le: '当前选择：Let\u2019s Encrypt（公共 CA）。证书由该机构签发，固定 90 天，不能自选到期日，需要 HTTP-01 或 DNS-01 域名验证。申请方式：用本仓库 php/acme（ACMECert v3.7.3）走 ACME v2，或用 freessl.cloud 这类工具选 Let\u2019s Encrypt。根域 CAA 需放行 0 issue letsencrypt.org。',
+    le: '当前选择：Let\u2019s Encrypt（公共 CA）。证书由该机构签发，固定 90 天，不能自选到期日，需要 HTTP-01 或 DNS-01 域名验证。申请方式：用 freessl.cloud 这类工具，或在本机用 ACME 客户端（acme.sh / certbot）向该 CA 申请。根域 CAA 需放行 0 issue letsencrypt.org。',
     zero: '当前选择：ZeroSSL（公共 CA）。证书由 ZeroSSL 签发，90 天，不能自选到期日，需要域名验证（HTTP 或 DNS TXT）。申请方式：zerossl.com 控制台，或用 ACME 客户端走 ZeroSSL 的 ACME 入口。',
     google: '当前选择：Google Cloud（Google Trust Services，公共 CA）。证书由 Google 签发，90 天，不能自选到期日，需要域名验证。申请方式：Google Trust Services 的 ACME 入口（pki.goog），需先具备相应账号资质。'
   };
@@ -611,8 +570,6 @@ file_put_contents('private_key.pem',$private_key);
     if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(el.value).then(function(){ setStatus(msg); }); }
     else { document.execCommand('copy'); setStatus(msg); }
   }
-  $('cp_php').addEventListener('click', function(){ copyArea('php_code', 'PHP 示例已复制'); });
-  $('cp_cname').addEventListener('click', function(){ copyArea('cname_demo', 'CNAME 示例已复制'); });
   $('cp_caa').addEventListener('click', function(){
     var v = $('caa_val').textContent;
     if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(v).then(function(){ setStatus('CAA 记录值已复制'); }); }
