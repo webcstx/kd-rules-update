@@ -47,6 +47,13 @@
   .units{display:flex;gap:8px}
   .unit{flex:1;min-height:46px;padding:0 12px;background:#0a1412;border:1px solid var(--line);color:var(--dim);border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;width:auto}
   .unit.on{background:rgba(61,220,151,.14);border-color:rgba(61,220,151,.6);color:var(--acc)}
+  .iss{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 14px;
+    background:#101a25;border:1px solid var(--line);border-radius:12px;margin-bottom:10px;cursor:pointer}
+  .iss.on{border-color:rgba(61,220,151,.6);background:rgba(61,220,151,.12)}
+  .iss b{font-size:14px;color:var(--fg)}
+  .iss small{display:block;color:var(--dim);font-size:12px;margin-top:3px}
+  .iss .badge{font-size:11px;color:var(--acc);border:1px solid rgba(61,220,151,.4);border-radius:999px;padding:2px 8px;white-space:nowrap}
+  .iss .badge.pub{color:#9ecbff;border-color:rgba(158,203,255,.4)}
 </style>
 </head>
 <body>
@@ -54,6 +61,30 @@
   <span class="tag">FreeIssue · SSL 证书分发</span>
   <h1>FreeIssue</h1>
   <p class="sub">由本站自建的根证书（FreeIssue CA）为你的域名生成证书，到期日可自选。先在设备里安装一次根证书，之后生成的证书就会被系统信任。颁发机构标识为 <code id="issuerTxt">https://webcat.bbroot.com/分发证书</code>。</p>
+
+  <div class="card">
+    <label>证书颁发机构</label>
+    <div class="hint" style="margin-top:0;margin-bottom:12px">选「自由签发」就在这个页面本地生成证书；选下面几种公共 CA，则由对应机构签发，本站不代签。</div>
+
+    <div class="iss on" data-k="local">
+      <div><b>自由签发（Free Issuance）</b><small>本页自建根证书签发，到期日自选，设备要先装 rootCA.crt</small></div>
+      <span class="badge">推荐</span>
+    </div>
+    <div class="iss" data-k="le">
+      <div><b>Let's Encrypt</b><small>公共 CA，免费，证书固定 90 天，需要 HTTP-01 或 DNS-01 验证</small></div>
+      <span class="badge pub">公共 CA</span>
+    </div>
+    <div class="iss" data-k="zero">
+      <div><b>ZeroSSL</b><small>公共 CA，免费，证书 90 天，需要域名验证；Let's Encrypt 拒绝时可用</small></div>
+      <span class="badge pub">公共 CA</span>
+    </div>
+    <div class="iss" data-k="google">
+      <div><b>Google Cloud（Google Trust Services）</b><small>公共 CA，免费，证书 90 天，需要域名验证</small></div>
+      <span class="badge pub">公共 CA</span>
+    </div>
+
+    <div class="hint" id="iss_note" style="white-space:pre-wrap;margin-top:12px">当前选择：自由签发（Free Issuance），证书在本页本地生成，到期日由你选。</div>
+  </div>
 
   <div class="card">
     <label>域名（多个用换行或逗号分隔）</label>
@@ -284,6 +315,7 @@ file_put_contents('private_key.pem',$private_key);
 
   function startGenerate(){
     hideErr();
+    if(ISSUER_CHOICE !== 'local'){ showErr('当前选择的公共 CA 由该机构签发，本页不代签。请按上方说明走 ACME 申请。'); return; }
     var domains = parseDomains($('domains').value);
     if(!domains.length){ showErr('请先填写域名。'); return; }
     setStatus('');
@@ -458,6 +490,28 @@ file_put_contents('private_key.pem',$private_key);
     if(el = $('footHost')){ el.textContent = SITE.replace(/^https?:\/\//,'').replace(/\/$/,''); }
   })();
 
+  var ISSUER_CHOICE = 'local';
+  var ISSUER_NOTE = {
+    local: '当前选择：自由签发（Free Issuance），证书在本页本地生成，到期日由你选。装过 rootCA.crt 的设备才信任。',
+    le: '当前选择：Let\u2019s Encrypt（公共 CA）。证书由该机构签发，固定 90 天，不能自选到期日，需要 HTTP-01 或 DNS-01 域名验证。申请方式：用本仓库 php/acme（ACMECert v3.7.3）走 ACME v2，或用 freessl.cloud 这类工具选 Let\u2019s Encrypt。根域 CAA 需放行 0 issue letsencrypt.org。',
+    zero: '当前选择：ZeroSSL（公共 CA）。证书由 ZeroSSL 签发，90 天，不能自选到期日，需要域名验证（HTTP 或 DNS TXT）。申请方式：zerossl.com 控制台，或用 ACME 客户端走 ZeroSSL 的 ACME 入口。',
+    google: '当前选择：Google Cloud（Google Trust Services，公共 CA）。证书由 Google 签发，90 天，不能自选到期日，需要域名验证。申请方式：Google Trust Services 的 ACME 入口（pki.goog），需先具备相应账号资质。'
+  };
+  Array.prototype.forEach.call(document.querySelectorAll('.iss'), function(el){
+    el.addEventListener('click', function(){
+      Array.prototype.forEach.call(document.querySelectorAll('.iss'), function(x){ x.classList.remove('on'); });
+      el.classList.add('on');
+      ISSUER_CHOICE = el.getAttribute('data-k');
+      $('iss_note').textContent = ISSUER_NOTE[ISSUER_CHOICE];
+      var local = ISSUER_CHOICE === 'local';
+      $('go').disabled = !local;
+      $('go').textContent = local ? '生成证书' : '该 CA 需外部申请';
+      $('enddate').disabled = !local;
+      if(!local){ $('preview').textContent = '到期时间：由该 CA 决定，不能自选'; }
+      else { refreshPreview(); }
+      setStatus('');
+    });
+  });
   $('go').addEventListener('click', startGenerate);
   (function(){
     var d = new Date(); d.setDate(d.getDate()+365);
