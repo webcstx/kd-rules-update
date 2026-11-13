@@ -502,7 +502,7 @@ function tsErr(c){ window.__tsToken=''; var b=document.getElementById('go'); if(
         showErr('生成失败：'+(e && e.message ? e.message : e));
         setStatus('');
       }finally{
-        $('go').disabled = false;
+        $('go').disabled = !window.__tsToken;
       }
     }, 30);
   }
