@@ -169,33 +169,34 @@
 
   <div class="card" id="devbox">
     <label>自动签发 · PHP（可选，给公共 CA 用）</label>
-    <div class="hint">本站签发是浏览器本地自签，不需要这条。只有你想让服务器自己向 Let's Encrypt 申请公开可信证书时才用。PHP 侧常用 <code>skoerfgen/ACMECert</code>，走 <code>dns-01</code> 验证，通配符证书也必须用 dns-01。</div>
-    <textarea id="php_code" readonly style="min-height:210px"><?php
-require __DIR__ . '/src/ACMECert.php';
+    <div class="hint">本站签发是浏览器本地自签，不需要这条。只有你想让服务器自己向 Let's Encrypt 申请公开可信证书时才用。下面的代码摘自开源项目 <code>skoerfgen/ACMECert</code> v3.7.3 的官方 README（MIT 许可），本仓库 <code>php/acme/</code> 已原样收录该库源码；走 <code>dns-01</code> 验证，通配符证书也必须用 dns-01。</div>
+    <textarea id="php_code" readonly style="min-height:300px"><?php
+// 摘自 skoerfgen/ACMECert v3.7.3 的 README（MIT，Stefan Körfgen）
+require 'ACMECert.php';
 
-$ac = new ACMECert('https://acme-v02.api.letsencrypt.org/directory');
-$ac->loadAccountKey('file://account_key.pem');   // 首次使用需先注册账号并生成该密钥
+$ac=new ACMECert('https://acme-v02.api.letsencrypt.org/directory');
+$ac->loadAccountKey('file://'.'account_key.pem');
 
-$domains = [
-    'example.com' => ['challenge' => 'dns-01'],
-];
+$domain_config=array(
+  'example.com'=>array('challenge'=>'dns-01')
+);
 
-$handler = function ($opts) {
-    // $opts['key']   = _acme-challenge.example.com
-    // $opts['value'] = 本次需要添加的 TXT 值
-    echo "请添加 TXT 记录：{$opts['key']} => {$opts['value']}\n";
-    fgets(STDIN);
-    return function ($opts) {
-        echo "验证完成，可以删除 {$opts['key']} 的 TXT 记录\n";
-    };
+$handler=function($opts){
+  switch($opts['config']['challenge']){
+    case 'dns-01': // manual example:
+      echo 'Create DNS-TXT-Record '.$opts['key'].' with value '.$opts['value']."\n";
+      readline('Ready?');
+      return function($opts){
+        echo 'Remove DNS-TXT-Record '.$opts['key'].' with value '.$opts['value']."\n";
+      };
+    break;
+  }
 };
 
-$key   = $ac->generateRSAKey(2048);
-$chain = $ac->getCertificateChain($key, $domains, $handler);
-
-file_put_contents(__DIR__ . '/fullchain.pem', $chain);
-file_put_contents(__DIR__ . '/private_key.pem', $key);
-echo "已写入 fullchain.pem 与 private_key.pem\n";
+$private_key=$ac->generateRSAKey(2048);
+$fullchain=$ac->getCertificateChain($private_key,$domain_config,$handler);
+file_put_contents('fullchain.pem',$fullchain);
+file_put_contents('private_key.pem',$private_key);
 </textarea>
     <div class="btnline"><button class="ghost" id="cp_php">复制 PHP 示例</button></div>
     <div class="hint">放行顺序：先在 DNS 里让 CAA 包含要用的 CA（Let's Encrypt 就是 <code>0 issue "letsencrypt.org"</code>），再跑脚本。CAA 不允许的 CA，验证会被直接拒绝。</div>
