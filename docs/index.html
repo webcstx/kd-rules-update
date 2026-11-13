@@ -62,14 +62,9 @@
 
     <div class="row" style="margin-top:16px">
       <div>
-        <label>有效时长（先输入数字，再选 天 / 月 / 年）</label>
-        <input id="amount" type="number" min="1" step="1" value="90" inputmode="numeric" placeholder="输入要签发的数字" style="width:100%;font-size:20px;font-weight:700;text-align:center;padding:14px 12px">
-        <div class="units" style="margin-top:10px">
-          <button type="button" class="unit on" data-u="day">天</button>
-          <button type="button" class="unit" data-u="month">月</button>
-          <button type="button" class="unit" data-u="year">年</button>
-        </div>
-        <div class="hint" id="preview">当前设置：90 天</div>
+        <label>到期日期（直接选结束那天，不按天数往后推算）</label>
+        <input id="enddate" type="date" style="width:100%;font-size:20px;font-weight:700;text-align:center;padding:14px 12px">
+        <div class="hint" id="preview">到期时间：—</div>
       </div>
       <div>
         <label>密钥长度</label>
@@ -407,12 +402,13 @@ file_put_contents('private_key.pem',$private_key);
     $('ca_status').textContent = '根证书已就绪（有效期 20 年）。装进系统后，本站签发的证书就会被信任。';
   }
 
-  var UNIT = 'day';
+  function dstr(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
   function refreshPreview(){
-    var amount = parseInt($('amount').value, 10);
-    if(!(amount >= 1)){ $('preview').textContent = '请输入大于 0 的数字'; return; }
-    var na = addSpan(new Date(), amount, UNIT);
-    $('preview').textContent = '当前设置：' + amount + ' ' + unitLabel(UNIT) + '，到期时间约 ' + fmt(na).slice(0,10);
+    var v = $('enddate').value;
+    if(!v){ $('preview').textContent = '到期时间：未选择'; return; }
+    var na = new Date(v+'T23:59:59');
+    var days = Math.floor((na - new Date())/86400000);
+    $('preview').textContent = '到期时间：' + v + (days >= 0 ? '（还剩 ' + days + ' 天）' : '（已过去 ' + (-days) + ' 天，签发会失败）');
   }
 
   function confTpl(d0){
@@ -439,11 +435,12 @@ file_put_contents('private_key.pem',$private_key);
     $('outbox').style.display='none';
     var domains = parseDomains($('domains').value);
     if(!domains.length){ showErr('请至少填写一个域名。'); return; }
-    var amount = parseInt($('amount').value, 10);
-    var unit = UNIT;
     var bits = parseInt($('bits').value, 10);
-    if(!(amount >= 1)){ showErr('有效时长必须是大于 0 的整数。'); return; }
-    if(unit === 'year' && amount > 100){ showErr('年数过大，请填 100 以内。'); return; }
+    var endStr = $('enddate').value;
+    if(!endStr){ showErr('请先选择到期日期。'); return; }
+    var endDate = new Date(endStr+'T23:59:59');
+    if(isNaN(endDate.getTime())){ showErr('到期日期格式不对。'); return; }
+    if(endDate.getTime() <= Date.now()){ showErr('到期日期必须晚于今天。'); return; }
 
     $('go').disabled = true;
     setStatus('正在生成 RSA 私钥（'+bits+' 位），请稍候…');
@@ -454,7 +451,7 @@ file_put_contents('private_key.pem',$private_key);
 
         var notBefore = new Date();
         notBefore.setDate(notBefore.getDate()-1);
-        var notAfter = addSpan(new Date(), amount, unit);
+        var notAfter = endDate;
         var serial = forge.util.bytesToHex(forge.random.getBytesSync(18)).toUpperCase();
 
         var U = forge.asn1.Type.UTF8;
@@ -495,7 +492,7 @@ file_put_contents('private_key.pem',$private_key);
         $('o_domains').textContent = domains.join(', ');
         $('o_issuer').textContent = ISSUER;
         $('o_from').textContent = fmt(notBefore);
-        $('o_to').textContent = fmt(notAfter) + '（'+amount+' '+unitLabel(unit)+'）';
+        $('o_to').textContent = fmt(notAfter) + '（自选到期日）';
         $('o_bits').textContent = 'RSA '+bits;
         $('o_fp').textContent = sha256hex(certPem);
         var cf = confTpl(domains[0]);
@@ -522,15 +519,13 @@ file_put_contents('private_key.pem',$private_key);
   })();
 
   $('go').addEventListener('click', sign);
-  $('amount').addEventListener('input', refreshPreview);
-  Array.prototype.forEach.call(document.querySelectorAll('.unit'), function(b){
-    b.addEventListener('click', function(){
-      UNIT = b.getAttribute('data-u');
-      Array.prototype.forEach.call(document.querySelectorAll('.unit'), function(x){ x.classList.remove('on'); });
-      b.classList.add('on');
-      refreshPreview();
-    });
-  });
+  (function(){
+    var d = new Date(); d.setDate(d.getDate()+365);
+    $('enddate').value = dstr(d);
+    $('enddate').min = dstr(new Date(Date.now()+86400000));
+  })();
+  $('enddate').addEventListener('input', refreshPreview);
+  $('enddate').addEventListener('change', refreshPreview);
   (function(){
     var h = location.hostname;
     if(h && h !== 'localhost' && h !== '127.0.0.1' && !$('domains').value){ $('domains').value = h; }
