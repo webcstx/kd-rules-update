@@ -1,0 +1,12 @@
+<!doctype html><html><head><meta charset="utf-8"><title>turnstile test</title>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=cb" async defer></script>
+</head><body>
+<div class="cf-turnstile" data-sitekey="0x4AAAAAAF_m03XPKegNGNal" data-callback="ok" data-error-callback="err"></div>
+<div id="out">waiting</div>
+<script>
+function ok(t){ window.__token = t; document.getElementById('out').textContent = 'TOKEN ' + t.slice(0,20) + '...'; }
+function err(c){ window.__err = c; document.getElementById('out').textContent = 'ERROR ' + c; }
+function cb(){ window.__loaded = true; }
+window.onerror = function(m){ window.__err2 = m; };
+</script>
+</body></html>
