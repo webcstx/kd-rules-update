@@ -245,16 +245,6 @@
     </div>
   </div>
 
-  <div class="card warnbox">
-    <b>使用说明</b><br>
-    1. 先在有效时长输入框填数字，再点「天 / 月 / 年」，下方会实时显示当前设置与预计到期时间。<br>
-    2. 点「生成证书」，直接在浏览器本地生成证书与私钥，不校验域名归属，也不把域名送去任何 DNS 解析。<br>
-    3. 生成后页面显示域名、颁发机构、生效时间与失效时间。生成前需要根证书就绪：点「下载根证书 rootCA.crt」，装进设备信任列表，本站生成的证书才会被系统信任；没装过的设备仍会提示不受信任。<br>
-4. 生成后结果区会给出 Nginx 与 Apache 的 HTTPS 配置，复制到服务器并重载即可开启 HTTPS。<br>
-    5. 传输证书优先用「加密导出」的 .p12（先设口令，至少 6 位），内含证书与私钥，必须口令才能打开，不要明文外发私钥。<br>
-    5. 证书与私钥全部在本机浏览器生成，不上传服务器，关闭页面即清除。
-  </div>
-
   <footer>
     <div class="foot-links">
       <a href="https://github.com/webcstx/kd-rules-update" target="_blank" rel="noopener">GitHub 仓库 · webcstx/kd-rules-update</a>
