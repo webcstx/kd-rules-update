@@ -81,6 +81,13 @@
       </div>
     </div>
 
+    <div style="margin-top:14px">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+        <input type="checkbox" id="caacheck" checked style="width:auto;margin:0">
+        <span>签发前查询 CAA 记录，查到才放行</span>
+      </label>
+      <div class="hint" id="caa_info" style="white-space:pre-wrap"></div>
+    </div>
     <div style="margin-top:18px"><button id="go">签发证书</button></div>
     <div class="hint" id="status"></div>
   </div>
@@ -215,7 +222,7 @@
     b.textContent = t;
     b.style.display = 'block';
   }
-  function hideErr(){ $('errbox').style.display='none'; }
+  function hideErr(){ var b = $('errbox'); b.textContent = ''; b.style.display = 'none'; }
 
   var LAST = null;
   function downloadBytes(name, bytes, mime){
@@ -246,11 +253,65 @@
     return md.digest().toHex().toUpperCase().replace(/(.{2})/g, '$1:').replace(/:$/, '');
   }
 
+  // ---- CAA 查询（阿里公共 DNS，支持跨域）----
+  function doh(name, type){
+    var url = 'https://dns.alidns.com/resolve?name=' + encodeURIComponent(name) + '&type=' + type + '&_=' + Date.now();
+    return fetch(url, {cache:'no-store'}).then(function(r){
+      if(!r.ok){ throw new Error('DNS 接口返回 ' + r.status); }
+      return r.json();
+    });
+  }
+  function findCAA(domain){
+    var name = String(domain).replace(/^\*\./, '').replace(/\.$/, '');
+    if(!name || name.indexOf('.') < 0){ return Promise.resolve(null); }
+    return doh(name, 257).then(function(d){
+      var list = (d.Answer || []).filter(function(x){ return String(x.type) === '257'; });
+      if(list.length){ return {name:name, records:list.map(function(x){ return String(x.data); })}; }
+      return findParentCAA(name.slice(name.indexOf('.') + 1), 0);
+    });
+  }
+  function findParentCAA(name, depth){
+    if(depth > 3 || name.indexOf('.') < 0){ return Promise.resolve(null); }
+    return doh(name, 257).then(function(d){
+      var list = (d.Answer || []).filter(function(x){ return String(x.type) === '257'; });
+      if(list.length){ return {name:name, records:list.map(function(x){ return String(x.data); })}; }
+      return findParentCAA(name.slice(name.indexOf('.') + 1), depth + 1);
+    });
+  }
+  function caaGate(domains){
+    var lines = [];
+    var chain = Promise.resolve();
+    domains.forEach(function(d){
+      if(isIP(d)){ return; }
+      chain = chain.then(function(){
+        setStatus('正在查询 ' + d + ' 的 CAA 记录…');
+        return findCAA(d).then(function(res){
+          if(!res){ var e = new Error('NOCAA'); e.domain = d; throw e; }
+          lines.push(res.name + '  →  ' + res.records.join(' ； '));
+        });
+      });
+    });
+    return chain.then(function(){
+      if($('caa_info')){ $('caa_info').textContent = lines.join('\n'); }
+      return true;
+    });
+  }
+
   function sign(){
     hideErr();
     var domains = parseDomains($('domains').value);
     if(!domains.length){ showErr('请先填写要签发的域名。'); return; }
-    issue();
+    if($('caa_info')){ $('caa_info').textContent = ''; }
+    if(!$('caacheck') || !$('caacheck').checked){ setStatus(''); issue(); return; }
+    caaGate(domains).then(function(){
+      setStatus('CAA 记录已查到，开始签发…');
+      issue();
+    }).catch(function(e){
+      var d = e && e.domain ? e.domain : '';
+      if(d){ showErr('没有查到 ' + d + ' 的 CAA 记录，已停止签发。请先在 DNS 面板添加一条：类型 CAA、主机记录 ' + d + '、值 0 issue "letsencrypt.org"，解析生效后再点签发。'); }
+      else { showErr('CAA 查询失败：' + (e && e.message ? e.message : '网络不可用') + '，已停止签发。'); }
+      setStatus('');
+    });
   }
 
   var CA_KEY = 'webcat_free_ca_key', CA_CERT = 'webcat_free_ca_crt';
