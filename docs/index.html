@@ -201,7 +201,7 @@
     </div>
 
     <div class="hint" id="acme_status" style="display:none"></div>
-    <div class="hint">CAA 要求：根域必须放行 <code>0 issue "letsencrypt.org"</code>，否则验证会被直接拒绝。ZeroSSL 与 Google Cloud 除了在各自平台验证域名，还要先拿 EAB 凭证（key id + HMAC key），所以本页只内置了 Let's Encrypt 的这条流程。</div>
+    <div class="hint">CAA 要求：根域必须放行 <code>0 issue "letsencrypt.org"</code>，否则验证会被直接拒绝。证书 90 天到期，到期前把这一步再走一遍即可续期。</div>
   </div>
 
   <div class="card" id="cabox">
@@ -550,8 +550,7 @@
   var ISSUER_CHOICE = 'le';
   var ISSUER_NOTE = {
     local: '当前选择：自由签发（Free Issuance），证书在本页本地生成，到期日由你选。装过 rootCA.crt 的设备才信任。',
-    le: '当前选择：Let\u2019s Encrypt（公共 CA）。证书由该机构签发，固定 90 天，不能自选到期日，需要 HTTP-01 或 DNS-01 域名验证。申请方式：用 freessl.cloud 这类工具，或在本机用 ACME 客户端（acme.sh / certbot）向该 CA 申请。根域 CAA 需放行 0 issue letsencrypt.org。',
-    google: '当前选择：Google Cloud（Google Trust Services，公共 CA）。证书由 Google 签发，90 天，不能自选到期日，需要域名验证。申请方式：Google Trust Services 的 ACME 入口（pki.goog），需先具备相应账号资质。'
+    le: '当前选择：Let\u2019s Encrypt（公共 CA）。证书由该机构签发，固定 90 天，不能自选到期日；在下方卡片里直接创建订单、加一条 DNS TXT 就能签发，不需要注册账号、不需要服务器。'
   };
   function selectIssuer(k){
     var el = document.querySelector('.iss[data-k="' + k + '"]');
