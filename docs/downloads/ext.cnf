@@ -1,0 +1,4 @@
+subjectAltName=DNS:webcat.bbroot.com,DNS:*.bbroot.com
+extendedKeyUsage=serverAuth
+basicConstraints=critical,CA:FALSE
+keyUsage=critical,digitalSignature,keyEncipherment
