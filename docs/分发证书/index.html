@@ -167,7 +167,6 @@
         <div class="cf-turnstile" data-sitekey="0x4AAAAAAF_m03XPKegNGNal" data-theme="light" data-language="zh-cn"
              data-callback="tsOk" data-expired-callback="tsExpired" data-error-callback="tsErr"></div>
       </div>
-      <div class="hint" id="ts_hint" style="text-align:center;margin-top:0">先完成上面的人机验证，才能点「生成证书」。</div>
       <button id="go" disabled>生成证书</button>
     </div>
     <div class="hint" id="status"></div>
@@ -182,6 +181,15 @@
       <button class="ghost" id="dl_ca">下载根证书 rootCA.crt</button>
     </div>
     <div class="hint">安装位置：安卓「设置 → 安全 → 加密与凭据 → 安装证书 → CA 证书」；Windows 选「受信任的根证书颁发机构」；iOS 用描述文件安装后到「关于本机 → 证书信任设置」里开启。</div>
+  </div>
+
+  <div class="card" id="acmebox">
+    <label>ACME 目录接口</label>
+    <div class="hint" style="margin-top:0">Let&rsquo;s Encrypt ACME v2 目录地址，可直接填进 acme.sh / certbot 等兼容客户端。</div>
+    <div class="kv"><span>目录地址</span><span id="acme_dir" style="word-break:break-all;text-align:right">https://acme-v02.api.letsencrypt.org/directory</span></div>
+    <div class="btnline" style="margin-top:12px">
+      <button class="ghost" id="cp_acme">复制接口地址</button>
+    </div>
   </div>
 
   <div class="card" id="caabox">
@@ -258,9 +266,9 @@
 
 <script>
 window.__tsToken = '';
-function tsOk(t){ window.__tsToken = t; var b=document.getElementById('go'); if(b){ b.disabled=false; } var h=document.getElementById('ts_hint'); if(h){ h.textContent='人机验证已通过。'; } }
-function tsExpired(){ window.__tsToken=''; var b=document.getElementById('go'); if(b){ b.disabled=true; } var h=document.getElementById('ts_hint'); if(h){ h.textContent='验证已过期，请重新完成。'; } }
-function tsErr(c){ window.__tsToken=''; var b=document.getElementById('go'); if(b){ b.disabled=true; } var h=document.getElementById('ts_hint'); if(h){ h.textContent='验证组件报错（代码 '+c+'），请刷新重试。'; } }
+function tsOk(t){ window.__tsToken = t; var b=document.getElementById('go'); if(b){ b.disabled=false; } }
+function tsExpired(){ window.__tsToken=''; var b=document.getElementById('go'); if(b){ b.disabled=true; } }
+function tsErr(c){ window.__tsToken=''; var b=document.getElementById('go'); if(b){ b.disabled=true; } }
 </script>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <script src="forge.min.js"></script>
@@ -496,7 +504,6 @@ function tsErr(c){ window.__tsToken=''; var b=document.getElementById('go'); if(
         $('outbox').style.display = 'block';
         refreshCA();
         setStatus('生成完成，证书与私钥已在下方。');
-        var hh=$('ts_hint'); if(hh && window.__tsToken){ hh.textContent='人机验证已通过，可继续生成；过期后需要重新验证。'; }
         $('outbox').scrollIntoView({behavior:'smooth', block:'start'});
       }catch(e){
         showErr('生成失败：'+(e && e.message ? e.message : e));
@@ -550,14 +557,12 @@ function tsErr(c){ window.__tsToken=''; var b=document.getElementById('go'); if(
     var h = location.hostname;
     if(h && h !== 'localhost' && h !== '127.0.0.1' && !$('domains').value){ $('domains').value = h; }
   })();
-  setTimeout(function(){
-    try{
-      var w = document.querySelector('.cf-turnstile');
-      var h = w ? w.getBoundingClientRect().height : 0;
-      if(!window.__tsToken && h < 20){ $('ts_hint').textContent = '人机验证组件没能加载出来（可能被网络拦截），请刷新页面或换网络重试。'; }
-    }catch(e){}
-  }, 8000);
   setTimeout(function(){ selectIssuer(ISSUER_CHOICE); }, 30);
+  $('cp_acme').addEventListener('click', function(){
+    var v = $('acme_dir').textContent;
+    if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(v).then(function(){ setStatus('ACME 目录地址已复制'); }); }
+    else { setStatus('ACME 目录地址：' + v); }
+  });
   $('dl_ca').addEventListener('click', function(){
     var ca = ensureCA();
     download('rootCA.crt', forge.pki.certificateToPem(ca.cert), 'application/x-x509-ca-cert');
