@@ -98,6 +98,14 @@ CAA（RFC 8659）是 DNS 里声明“哪些公共 CA 可以给本域名签证书
 4. 签发成功后下载 `cert.pem` 与 `key.pem`，或用口令导出加密的 `.p12`
 5. 结果区还会给出 Nginx / Apache 的 HTTPS 配置，复制到服务器重载即可开启 HTTPS
 
+## 附带的 PHP 签发库
+
+`php/acme/` 直接引入开源项目 [skoerfgen/ACMECert](https://github.com/skoerfgen/ACMECert) v3.7.3 的源码（MIT 许可，版权归 Stefan Körfgen，许可证见该目录 `LICENSE.md`），用于让服务器自己走 ACME v2 向公共 CA 申请证书，支持 `http-01`、`dns-01`、`tls-alpn-01`。
+
+它与本站页面里的自建 CA 本地自签无关：一个是公共可信证书，有效期由 CA 决定；一个是自签证书，有效期可自定义，但只有装过根证书的设备才信任。
+
+使用前 CAA 需放行：根域加 `0 issue "letsencrypt.org"`（已成 CNAME 的域名不能再挂 CAA）。
+
 ## 许可证
 
 本项目采用 [Apache License 2.0](LICENSE)。
