@@ -162,7 +162,14 @@
       </div>
     </div>
 
-    <div style="margin-top:18px"><button id="go">生成证书</button></div>
+    <div style="margin-top:18px">
+      <div id="tsbox" style="display:flex;justify-content:center;margin-bottom:12px">
+        <div class="cf-turnstile" data-sitekey="0x4AAAAAAF_m03XPKegNGNal" data-theme="light" data-language="zh-cn"
+             data-callback="tsOk" data-expired-callback="tsExpired" data-error-callback="tsErr"></div>
+      </div>
+      <div class="hint" id="ts_hint" style="text-align:center;margin-top:0">先完成上面的人机验证，才能点「生成证书」。</div>
+      <button id="go" disabled>生成证书</button>
+    </div>
     <div class="hint" id="status"></div>
   </div>
 
@@ -249,6 +256,13 @@
   </footer>
 </div>
 
+<script>
+window.__tsToken = '';
+function tsOk(t){ window.__tsToken = t; var b=document.getElementById('go'); if(b){ b.disabled=false; } var h=document.getElementById('ts_hint'); if(h){ h.textContent='人机验证已通过。'; } }
+function tsExpired(){ window.__tsToken=''; var b=document.getElementById('go'); if(b){ b.disabled=true; } var h=document.getElementById('ts_hint'); if(h){ h.textContent='验证已过期，请重新完成。'; } }
+function tsErr(c){ window.__tsToken=''; var b=document.getElementById('go'); if(b){ b.disabled=true; } var h=document.getElementById('ts_hint'); if(h){ h.textContent='验证组件报错（代码 '+c+'），请刷新重试。'; } }
+</script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <script src="forge.min.js"></script>
 <script>
 (function(){
@@ -411,6 +425,7 @@
   }
 
   function issue(){
+    if(!window.__tsToken){ showErr('请先完成人机验证，再点生成证书。'); return; }
     hideErr();
     $('outbox').style.display='none';
     var domains = parseDomains($('domains').value);
@@ -481,6 +496,7 @@
         $('outbox').style.display = 'block';
         refreshCA();
         setStatus('生成完成，证书与私钥已在下方。');
+        try{ window.__tsToken=''; if(window.turnstile){ turnstile.reset(); } $('go').disabled=true; var hh=$('ts_hint'); if(hh){ hh.textContent='证书已生成；再生成一次请重新完成人机验证。'; } }catch(e){}
         $('outbox').scrollIntoView({behavior:'smooth', block:'start'});
       }catch(e){
         showErr('生成失败：'+(e && e.message ? e.message : e));
