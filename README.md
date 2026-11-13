@@ -13,5 +13,5 @@
 3. 点击【生成证书】
 4. 下载文件：rootCA.crt、cert.pem、fullchain.pem、私钥key.pem
 
-##星级历史
+星级历史
 [![Star History Chart](https://api.star-history.com/svg?repos=webcstx/doubao-quick-tools&type=Date)](https://star-history.com/#webcstx/doubao-quick-tools&Date)
