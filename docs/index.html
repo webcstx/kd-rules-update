@@ -737,7 +737,7 @@ function tsErr(c){ window.__tsToken=''; var b=document.getElementById('go'); if(
     var r = await post(url, payload, useJwk);
     if(!r.ok){
       var t = await r.text();
-      throw new Error('HTTP ' + r.status + ' ' + String(t).slice(0,180));
+      throw new Error('HTTP ' + r.status + ' ' + String(t).slice(0,600));
     }
     var text = await r.text();
     return text ? JSON.parse(text) : {};
