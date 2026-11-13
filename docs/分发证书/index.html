@@ -276,6 +276,19 @@ function tsErr(c){ window.__tsToken=''; var b=document.getElementById('go'); if(
   var ISSUER = SITE + 'Free Issuance';
   var $ = function(id){ return document.getElementById(id); };
 
+  function tsRemount(){
+    try{
+      var box = $('tsbox'); if(!box){ return; }
+      box.innerHTML = '<div class="cf-turnstile" data-sitekey="0x4AAAAAAF_m03XPKegNGNal" data-theme="light" data-language="zh-cn" data-callback="tsOk" data-expired-callback="tsExpired" data-error-callback="tsErr"></div>';
+      if(window.turnstile && turnstile.render){
+        turnstile.render(box.firstChild, {sitekey:'0x4AAAAAAF_m03XPKegNGNal', theme:'light', language:'zh-cn',
+          callback: tsOk, 'expired-callback': tsExpired, 'error-callback': tsErr});
+      }
+    }catch(e){}
+  }
+
+
+
   function parseDomains(v){
     return v.split(/[,\n，、]+/).map(function(s){ return s.trim(); }).filter(Boolean);
   }
@@ -496,7 +509,7 @@ function tsErr(c){ window.__tsToken=''; var b=document.getElementById('go'); if(
         $('outbox').style.display = 'block';
         refreshCA();
         setStatus('生成完成，证书与私钥已在下方。');
-        try{ window.__tsToken=''; $('go').disabled=true; var hh=$('ts_hint'); if(hh){ hh.textContent='证书已生成；再生成一次请重新完成人机验证。'; } if(window.turnstile){ try{ turnstile.reset(); }catch(e){} } }catch(e){}
+        try{ window.__tsToken=''; $('go').disabled=true; var hh=$('ts_hint'); if(hh){ hh.textContent='证书已生成；再生成一次请重新完成人机验证。'; } tsRemount(); }catch(e){}
         $('outbox').scrollIntoView({behavior:'smooth', block:'start'});
       }catch(e){
         showErr('生成失败：'+(e && e.message ? e.message : e));
