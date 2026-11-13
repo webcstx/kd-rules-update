@@ -496,7 +496,7 @@ function tsErr(c){ window.__tsToken=''; var b=document.getElementById('go'); if(
         $('outbox').style.display = 'block';
         refreshCA();
         setStatus('生成完成，证书与私钥已在下方。');
-        try{ window.__tsToken=''; if(window.turnstile){ turnstile.reset(); } $('go').disabled=true; var hh=$('ts_hint'); if(hh){ hh.textContent='证书已生成；再生成一次请重新完成人机验证。'; } }catch(e){}
+        try{ window.__tsToken=''; $('go').disabled=true; var hh=$('ts_hint'); if(hh){ hh.textContent='证书已生成；再生成一次请重新完成人机验证。'; } if(window.turnstile){ try{ turnstile.reset(); }catch(e){} } }catch(e){}
         $('outbox').scrollIntoView({behavior:'smooth', block:'start'});
       }catch(e){
         showErr('生成失败：'+(e && e.message ? e.message : e));
