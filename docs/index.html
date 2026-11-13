@@ -53,7 +53,7 @@
 <div class="wrap">
   <span class="tag">FreeIssue · SSL 证书分发</span>
   <h1>FreeIssue</h1>
-  <p class="sub">由本站自建的根证书（FreeIssue CA）为你的域名签发证书，有效期可自定义。先在设备里安装一次根证书，之后签发的证书就会被系统信任。签发机构标识为 <code id="issuerTxt">https://webcat.bbroot.com/分发证书</code>。</p>
+  <p class="sub">由本站自建的根证书（FreeIssue CA）为你的域名生成证书，到期日可自选。先在设备里安装一次根证书，之后生成的证书就会被系统信任。颁发机构标识为 <code id="issuerTxt">https://webcat.bbroot.com/分发证书</code>。</p>
 
   <div class="card">
     <label>域名（多个用换行或逗号分隔）</label>
@@ -76,14 +76,7 @@
       </div>
     </div>
 
-    <div style="margin-top:14px">
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-        <input type="checkbox" id="caacheck" checked style="width:auto;margin:0">
-        <span>签发前查询 CAA 记录，查到才放行</span>
-      </label>
-      <div class="hint" id="caa_info" style="white-space:pre-wrap"></div>
-    </div>
-    <div style="margin-top:18px"><button id="go">签发证书</button></div>
+    <div style="margin-top:18px"><button id="go">生成证书</button></div>
     <div class="hint" id="status"></div>
   </div>
 
@@ -100,7 +93,7 @@
 
   <div class="card" id="caabox">
     <label>CAA 记录 · 放行公共 CA 签发</label>
-    <div class="hint">CAA 是告诉公共 CA「哪些 CA 可以给这个域名签发证书」的授权记录，只有公共 CA 在签发前会查它。本站的自建 CA 在浏览器本地签发，不查 CAA。<br>如果这个域名同时托管在 GitHub Pages，它的证书由 Let's Encrypt 签发，必须放行 <code>letsencrypt.org</code>，否则到期续签会被拦下。<br>注意：CAA 记录要写在根域（如 bbroot.com），CA 会从子域逐级向上找最近的记录；已经设成 CNAME 的域名不能再挂别的记录，所以不能写在 <code>webcat.bbroot.com</code> 上。</div>
+    <div class="hint">CAA 是告诉公共 CA「哪些 CA 可以给这个域名签发证书」的授权记录，只有公共 CA 在签发前会查它。本站的自建 CA 在浏览器本地生成，不查 CAA。<br>如果这个域名同时托管在 GitHub Pages，它的证书由 Let's Encrypt 签发，必须放行 <code>letsencrypt.org</code>，否则到期续签会被拦下。<br>注意：CAA 记录要写在根域（如 bbroot.com），CA 会从子域逐级向上找最近的记录；已经设成 CNAME 的域名不能再挂别的记录，所以不能写在 <code>webcat.bbroot.com</code> 上。</div>
     <div class="kv"><span>主机记录</span><span>根域（如 bbroot.com），不要写在 CNAME 域名上</span></div>
     <div class="kv"><span>记录类型</span><span>CAA</span></div>
     <div class="kv"><span>记录值</span><span id="caa_val" style="word-break:break-all;text-align:right">0 issue "letsencrypt.org"</span></div>
@@ -113,9 +106,9 @@
   <div class="card errbox" id="errbox"></div>
 
   <div class="card out" id="outbox">
-    <div class="kv"><span>状态</span><span class="ok">签发成功</span></div>
+    <div class="kv"><span>状态</span><span class="ok">生成完成</span></div>
     <div class="kv"><span>域名</span><span id="o_domains"></span></div>
-    <div class="kv"><span>签发机构</span><span id="o_issuer"></span></div>
+    <div class="kv"><span>颁发机构</span><span id="o_issuer"></span></div>
     <div class="kv"><span>生效时间</span><span id="o_from"></span></div>
     <div class="kv"><span>失效时间</span><span id="o_to"></span></div>
     <div class="kv"><span>密钥</span><span id="o_bits"></span></div>
@@ -151,7 +144,7 @@
 
     <div style="margin-top:16px">
       <label>在你的服务器上启用 HTTPS</label>
-      <div class="hint">把 cert.pem 与 key.pem 传到服务器（示例路径 /etc/ssl/webcat/），再按服务器类型复制对应配置，把域名处替换成你签发的域名。</div>
+      <div class="hint">把 cert.pem 与 key.pem 传到服务器（示例路径 /etc/ssl/webcat/），再按服务器类型复制对应配置，把域名处替换成你生成的域名。</div>
       <div style="margin-top:10px"><b>Nginx</b></div>
       <textarea id="ngx_conf" readonly style="min-height:170px"></textarea>
       <div class="btnline"><button class="ghost" id="cp_ngx">复制 Nginx 配置</button></div>
@@ -164,7 +157,7 @@
 
   <div class="card" id="devbox">
     <label>自动签发 · PHP（可选，给公共 CA 用）</label>
-    <div class="hint">本站签发是浏览器本地自签，不需要这条。只有你想让服务器自己向 Let's Encrypt 申请公开可信证书时才用。下面的代码摘自开源项目 <code>skoerfgen/ACMECert</code> v3.7.3 的官方 README（MIT 许可），本仓库 <code>php/acme/</code> 已原样收录该库源码；走 <code>dns-01</code> 验证，通配符证书也必须用 dns-01。</div>
+    <div class="hint">本站是在浏览器本地生成证书，不需要这条。只有你想让服务器自己向 Let's Encrypt 申请公开可信证书时才用。下面的代码摘自开源项目 <code>skoerfgen/ACMECert</code> v3.7.3 的官方 README（MIT 许可），本仓库 <code>php/acme/</code> 已原样收录该库源码；走 <code>dns-01</code> 验证，通配符证书也必须用 dns-01。</div>
     <textarea id="php_code" readonly style="min-height:300px"><?php
 // 摘自 skoerfgen/ACMECert v3.7.3 的 README（MIT，Stefan Körfgen）
 require 'ACMECert.php';
@@ -206,9 +199,9 @@ file_put_contents('private_key.pem',$private_key);
   <div class="card warnbox">
     <b>使用说明</b><br>
     1. 先在有效时长输入框填数字，再点「天 / 月 / 年」，下方会实时显示当前设置与预计到期时间。<br>
-    2. 点「签发证书」，直接在浏览器本地生成证书与私钥，不校验域名归属、不查任何 DNS 记录。<br>
-    3. 生成后页面显示域名、签发机构、生效时间与失效时间。签发前需要根证书就绪：点「下载根证书 rootCA.crt」，装进设备信任列表，本站签发的证书才会被系统信任；没装过的设备仍会提示不受信任。<br>
-4. 签发后结果区会给出 Nginx 与 Apache 的 HTTPS 配置，复制到服务器并重载即可开启 HTTPS。<br>
+    2. 点「生成证书」，直接在浏览器本地生成证书与私钥，不校验域名归属，也不把域名送去任何 DNS 解析。<br>
+    3. 生成后页面显示域名、颁发机构、生效时间与失效时间。生成前需要根证书就绪：点「下载根证书 rootCA.crt」，装进设备信任列表，本站生成的证书才会被系统信任；没装过的设备仍会提示不受信任。<br>
+4. 生成后结果区会给出 Nginx 与 Apache 的 HTTPS 配置，复制到服务器并重载即可开启 HTTPS。<br>
     5. 传输证书优先用「加密导出」的 .p12（先设口令，至少 6 位），内含证书与私钥，必须口令才能打开，不要明文外发私钥。<br>
     5. 证书与私钥全部在本机浏览器生成，不上传服务器，关闭页面即清除。
   </div>
@@ -289,65 +282,12 @@ file_put_contents('private_key.pem',$private_key);
     return md.digest().toHex().toUpperCase().replace(/(.{2})/g, '$1:').replace(/:$/, '');
   }
 
-  // ---- CAA 查询（阿里公共 DNS，支持跨域）----
-  function doh(name, type){
-    var url = 'https://dns.alidns.com/resolve?name=' + encodeURIComponent(name) + '&type=' + type + '&_=' + Date.now();
-    return fetch(url, {cache:'no-store'}).then(function(r){
-      if(!r.ok){ throw new Error('DNS 接口返回 ' + r.status); }
-      return r.json();
-    });
-  }
-  function findCAA(domain){
-    var name = String(domain).replace(/^\*\./, '').replace(/\.$/, '');
-    if(!name || name.indexOf('.') < 0){ return Promise.resolve(null); }
-    return doh(name, 257).then(function(d){
-      var list = (d.Answer || []).filter(function(x){ return String(x.type) === '257'; });
-      if(list.length){ return {name:name, records:list.map(function(x){ return String(x.data); })}; }
-      return findParentCAA(name.slice(name.indexOf('.') + 1), 0);
-    });
-  }
-  function findParentCAA(name, depth){
-    if(depth > 3 || name.indexOf('.') < 0){ return Promise.resolve(null); }
-    return doh(name, 257).then(function(d){
-      var list = (d.Answer || []).filter(function(x){ return String(x.type) === '257'; });
-      if(list.length){ return {name:name, records:list.map(function(x){ return String(x.data); })}; }
-      return findParentCAA(name.slice(name.indexOf('.') + 1), depth + 1);
-    });
-  }
-  function caaGate(domains){
-    var lines = [];
-    var chain = Promise.resolve();
-    domains.forEach(function(d){
-      if(isIP(d)){ return; }
-      chain = chain.then(function(){
-        setStatus('正在查询 ' + d + ' 的 CAA 记录…');
-        return findCAA(d).then(function(res){
-          if(!res){ var e = new Error('NOCAA'); e.domain = d; throw e; }
-          lines.push(res.name + '  →  ' + res.records.join(' ； '));
-        });
-      });
-    });
-    return chain.then(function(){
-      if($('caa_info')){ $('caa_info').textContent = lines.join('\n'); }
-      return true;
-    });
-  }
-
-  function sign(){
+  function startGenerate(){
     hideErr();
     var domains = parseDomains($('domains').value);
-    if(!domains.length){ showErr('请先填写要签发的域名。'); return; }
-    if($('caa_info')){ $('caa_info').textContent = ''; }
-    if(!$('caacheck') || !$('caacheck').checked){ setStatus(''); issue(); return; }
-    caaGate(domains).then(function(){
-      setStatus('CAA 记录已查到，开始签发…');
-      issue();
-    }).catch(function(e){
-      var d = e && e.domain ? e.domain : '';
-      if(d){ showErr('没有查到 ' + d + ' 的 CAA 记录，已停止签发。请先在 DNS 面板添加一条：类型 CAA、主机记录 ' + d + '、值 0 issue "letsencrypt.org"，解析生效后再点签发。'); }
-      else { showErr('CAA 查询失败：' + (e && e.message ? e.message : '网络不可用') + '，已停止签发。'); }
-      setStatus('');
-    });
+    if(!domains.length){ showErr('请先填写域名。'); return; }
+    setStatus('');
+    issue();
   }
 
   var CA_KEY = 'webcat_free_ca_key', CA_CERT = 'webcat_free_ca_crt';
@@ -399,7 +339,7 @@ file_put_contents('private_key.pem',$private_key);
     var ca;
     try{ ca = ensureCA(); }catch(e){ return; }
     $('ca_fp').textContent = caFingerprint(ca.cert);
-    $('ca_status').textContent = '根证书已就绪（有效期 20 年）。装进系统后，本站签发的证书就会被信任。';
+    $('ca_status').textContent = '根证书已就绪（有效期 20 年）。装进系统后，本站生成的证书就会被信任。';
   }
 
   function dstr(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
@@ -408,7 +348,7 @@ file_put_contents('private_key.pem',$private_key);
     if(!v){ $('preview').textContent = '到期时间：未选择'; return; }
     var na = new Date(v+'T23:59:59');
     var days = Math.floor((na - new Date())/86400000);
-    $('preview').textContent = '到期时间：' + v + (days >= 0 ? '（还剩 ' + days + ' 天）' : '（已过去 ' + (-days) + ' 天，签发会失败）');
+    $('preview').textContent = '到期时间：' + v + (days >= 0 ? '（还剩 ' + days + ' 天）' : '（已过去 ' + (-days) + ' 天，不能用于生成证书）');
   }
 
   function confTpl(d0){
@@ -499,7 +439,7 @@ file_put_contents('private_key.pem',$private_key);
         $('ngx_conf').value = cf.ngx;
         $('apa_conf').value = cf.apa;
         $('outbox').style.display = 'block';
-        setStatus('签发完成，已生成证书与私钥。');
+        setStatus('生成完成，证书与私钥已在下方。');
         $('outbox').scrollIntoView({behavior:'smooth', block:'start'});
       }catch(e){
         showErr('生成失败：'+(e && e.message ? e.message : e));
@@ -518,7 +458,7 @@ file_put_contents('private_key.pem',$private_key);
     if(el = $('footHost')){ el.textContent = SITE.replace(/^https?:\/\//,'').replace(/\/$/,''); }
   })();
 
-  $('go').addEventListener('click', sign);
+  $('go').addEventListener('click', startGenerate);
   (function(){
     var d = new Date(); d.setDate(d.getDate()+365);
     $('enddate').value = dstr(d);
@@ -560,12 +500,12 @@ file_put_contents('private_key.pem',$private_key);
   $('dl_cert').addEventListener('click', function(){ download('cert.pem', $('cert').value); });
   $('dl_chain').addEventListener('click', function(){
     var c = $('cert').value, root = forge.pki.certificateToPem(ensureCA().cert);
-    if(!c){ showErr('请先签发证书。'); return; }
+    if(!c){ showErr('请先生成证书。'); return; }
     download('fullchain.pem', c.replace(/\s+$/,'') + '\n' + root.replace(/\s+$/,'') + '\n');
   });
   $('dl_key').addEventListener('click', function(){ download('key.pem', $('key').value); });
   $('dl_p12').addEventListener('click', function(){
-    if(!LAST){ showErr('请先签发证书。'); return; }
+    if(!LAST){ showErr('请先生成证书。'); return; }
     var pass = $('p12pass').value || '';
     if(pass.length < 6){ showErr('导出口令至少 6 位。'); return; }
     try{
