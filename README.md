@@ -23,12 +23,80 @@
 
 注意：自建根证书只对装过它的设备生效；没装过的设备仍会提示证书不受信任。要让所有人默认信任，只能使用公共 CA 签发的证书，而公共 CA 的有效期不可自定义。
 
+## 在服务器上启用 HTTPS
+
+签发成功后，页面结果区会直接给出 Nginx 与 Apache 两段配置，域名自动替换成你签发时填的域名，可一键复制。
+
+先上传证书（示例路径 `/etc/ssl/webcat/`）：
+
+```
+cert.pem  → /etc/ssl/webcat/cert.pem
+key.pem   → /etc/ssl/webcat/key.pem
+```
+
+Nginx 关键配置：
+
+```
+server {
+    listen 443 ssl;
+    server_name 你的域名;
+
+    ssl_certificate     /etc/ssl/webcat/cert.pem;
+    ssl_certificate_key /etc/ssl/webcat/key.pem;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+
+    location / {
+        root  /var/www/html;
+        index index.html;
+    }
+}
+
+server {
+    listen 80;
+    server_name 你的域名;
+    return 301 https://$host$request_uri;
+}
+```
+
+Apache 关键配置：
+
+```
+<VirtualHost *:443>
+  ServerName 你的域名
+  SSLEngine on
+  SSLCertificateFile    /etc/ssl/webcat/cert.pem
+  SSLCertificateKeyFile /etc/ssl/webcat/key.pem
+  DocumentRoot /var/www/html
+</VirtualHost>
+```
+
+改完先自检再重载：
+
+```
+nginx -t && nginx -s reload
+apachectl configtest && systemctl reload httpd
+```
+
+前提仍然是客户端装过 `rootCA.crt`，否则浏览器会提示证书不受信任。
+
+## 关于 CAA
+
+CAA（RFC 8659）是 DNS 里声明“哪些公共 CA 可以给本域名签证书”的记录，只有公共 CA 在签发前会查询它：
+
+- 它与本站的自建 CA 无关，本站签发不检查 CAA，也不会被 CAA 拦截
+- 它不能替代根证书安装。证书是否被信任，只取决于客户端有没有装 `rootCA.crt`
+- `0 issue ";"` 的含义是“不允许任何 CA 签发”，不是“宽松放行”
+- `issue` 的值只能是 CA 域名，写成网址或路径属于非标准用法
+
+如果域名同时用 GitHub Pages 托管，证书由 Let's Encrypt 签发，配置 CAA 时必须保留 `letsencrypt.org`，否则到期续签会被拒绝。
+
 ## 使用方式
 
 1. 打开站点，填写域名；在有效时长输入框里输入数字，再点「天」或「月」或「年」，下方会实时显示当前设置与预计到期时间
 2. 点「签发证书」
 3. 页面立即生成证书与私钥，并显示失效时间
 4. 签发成功后下载 `cert.pem` 与 `key.pem`，或用口令导出加密的 `.p12`
+5. 结果区还会给出 Nginx / Apache 的 HTTPS 配置，复制到服务器重载即可开启 HTTPS
 
 ## 许可证
 
