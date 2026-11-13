@@ -127,7 +127,7 @@
     <div class="hero-txt">
       <span class="tag">Free Issuance</span>
       <h1>自由签发 SSL 证书</h1>
-      <p class="sub">浏览器本地生成，到期日自己选，不向任何 CA 申请、不查 DNS。颁发机构标识 <code id="issuerTxt">https://webcat.bbroot.com/Free Issuance</code>。</p>
+      <p class="sub">浏览器本地生成，到期日自己选，不向任何 CA 申请、不查 DNS。颁发机构标识 <code id="issuerTxt">https://你的域名/Free Issuance</code>。</p>
     </div>
   </section>
 
@@ -146,7 +146,7 @@
 
   <div class="card">
     <label>域名（多个用换行或逗号分隔）</label>
-    <input id="domains" value="webcat.bbroot.com" placeholder="填写你的域名，例如 example.com">
+    <input id="domains" placeholder="填写你的域名，例如 example.com">
     <div class="hint">支持通配符（如 *.bbroot.com）与 IP 地址，会自动写入证书的 SAN 扩展。</div>
 
     <div class="row" style="margin-top:16px">
@@ -183,7 +183,7 @@
 
   <div class="card" id="caabox">
     <label>CAA 记录 · 放行公共 CA 签发</label>
-    <div class="hint">CAA 是告诉公共 CA「哪些 CA 可以给这个域名签发证书」的授权记录，只有公共 CA 在签发前会查它。本站的自建 CA 在浏览器本地生成，不查 CAA。<br>如果这个域名同时托管在 GitHub Pages，它的证书由 Let's Encrypt 签发，必须放行 <code>letsencrypt.org</code>，否则到期续签会被拦下。<br>注意：CAA 记录要写在根域（如 bbroot.com），CA 会从子域逐级向上找最近的记录；已经设成 CNAME 的域名不能再挂别的记录，所以不能写在 <code>webcat.bbroot.com</code> 上。</div>
+    <div class="hint">CAA 是告诉公共 CA「哪些 CA 可以给这个域名签发证书」的授权记录，只有公共 CA 在签发前会查它。本站的自建 CA 在浏览器本地生成，不查 CAA。<br>如果这个域名同时托管在 GitHub Pages，它的证书由 Let's Encrypt 签发，必须放行 <code>letsencrypt.org</code>，否则到期续签会被拦下。<br>注意：CAA 记录要写在根域（如 bbroot.com），CA 会从子域逐级向上找最近的记录；已经设成 CNAME 的域名不能再挂别的记录，所以不能写在已经设成 CNAME 的那个子域上。</div>
     <div class="kv"><span>主机记录</span><span>根域（如 bbroot.com），不要写在 CNAME 域名上</span></div>
     <div class="kv"><span>记录类型</span><span>CAA</span></div>
     <div class="kv"><span>记录值</span><span id="caa_val" style="word-break:break-all;text-align:right">0 issue "letsencrypt.org"</span></div>
@@ -249,18 +249,17 @@
     <div class="foot-links">
       <a href="https://github.com/webcstx/kd-rules-update" target="_blank" rel="noopener">GitHub 仓库 · webcstx/kd-rules-update</a>
     </div>
-    <div class="foot-meta"><span id="footHost">webcat.bbroot.com</span> · Free Issuance · 证书生成过程完全在本地浏览器完成</div>
+    <div class="foot-meta"><span id="footHost">—</span> · Free Issuance · 证书生成过程完全在本地浏览器完成</div>
   </footer>
 </div>
 
 <script src="forge.min.js"></script>
 <script>
 (function(){
-  // 域名统一从这里取：跟随当前访问地址，取不到时回落到 webcat.bbroot.com
+  // 域名统一从这里取：跟随当前访问地址，不再写死
   var SITE = (function(){
     var b = String(location.href).split('?')[0].split('#')[0].replace(/index\.html$/, '');
-    if(!/^http/.test(b)){ return 'https://webcat.bbroot.com/'; }
-    if(/localhost|127\.0\.0\.1|\[::1\]/.test(location.hostname)){ return 'https://webcat.bbroot.com/'; }
+    if(!/^http/.test(b)){ b = location.origin + '/'; }
     if(b.charAt(b.length-1) !== '/'){ b += '/'; }
     return b;
   })();
