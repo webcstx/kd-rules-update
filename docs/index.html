@@ -786,7 +786,7 @@ function tsErr(c){ window.__tsToken=''; var b=document.getElementById('go'); if(
         var d = null;
         try{ var s0 = msg.indexOf('{'); if(s0 >= 0){ var o = JSON.parse(msg.slice(s0)); if(o && o.detail){ d = [o.detail]; } } }catch(e2){}
         if(!d){ d = msg.match(/"detail"\s*:\s*"((?:[^"\\]|\\.)*)"/); d = d ? [d[1].replace(/\\"/g,'"')] : null; }
-        msg = 'Let\u2019s Encrypt 频率限制：' + (d ? d[1] : '短时间内签发过多') + '。这不是人机验证的问题，等限制解除再来，或换一个根域名签发。';
+        msg = 'Let\u2019s Encrypt 频率限制：' + (d && d[0] ? d[0] : '短时间内签发过多') + '。这不是人机验证的问题，等限制解除再来，或换一个根域名签发。';
       } else if(/rejectedIdentifier/i.test(msg)){
         msg = '这个域名 Let\u2019s Encrypt 不接受（保留或不允许的域名），换一个你自己的域名再试。';
       }
