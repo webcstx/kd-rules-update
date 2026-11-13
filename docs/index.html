@@ -163,10 +163,7 @@
     </div>
 
     <div style="margin-top:18px">
-      <div id="tsbox" style="display:flex;justify-content:center;margin-bottom:12px">
-        <div class="cf-turnstile" data-sitekey="0x4AAAAAAF_m03XPKegNGNal" data-theme="light" data-language="zh-cn"
-             data-callback="tsOk" data-expired-callback="tsExpired" data-error-callback="tsErr"></div>
-      </div>
+      <div id="tsbox" style="display:flex;justify-content:center;margin-bottom:12px"><div id="tsmount"></div></div>
       <div class="hint" id="ts_hint" style="text-align:center;margin-top:0">先完成上面的人机验证，才能点「生成证书」。</div>
       <button id="go" disabled>生成证书</button>
     </div>
@@ -276,18 +273,23 @@ function tsErr(c){ window.__tsToken=''; var b=document.getElementById('go'); if(
   var ISSUER = SITE + 'Free Issuance';
   var $ = function(id){ return document.getElementById(id); };
 
-  function tsRemount(){
+  function tsMount(){
+    var el = document.getElementById('tsmount');
+    if(!el || !window.turnstile || !turnstile.render){ return false; }
     try{
-      var box = $('tsbox'); if(!box){ return; }
-      box.innerHTML = '<div class="cf-turnstile" data-sitekey="0x4AAAAAAF_m03XPKegNGNal" data-theme="light" data-language="zh-cn" data-callback="tsOk" data-expired-callback="tsExpired" data-error-callback="tsErr"></div>';
-      if(window.turnstile && turnstile.render){
-        turnstile.render(box.firstChild, {sitekey:'0x4AAAAAAF_m03XPKegNGNal', theme:'light', language:'zh-cn',
-          callback: tsOk, 'expired-callback': tsExpired, 'error-callback': tsErr});
-      }
-    }catch(e){}
+      el.innerHTML = '';
+      window.__tsWid = turnstile.render(el, {sitekey:'0x4AAAAAAF_m03XPKegNGNal', theme:'light', language:'zh-cn',
+        callback: tsOk, 'expired-callback': tsExpired, 'error-callback': tsErr});
+      return true;
+    }catch(e){ return false; }
   }
-
-
+  function tsRemount(){
+    if(!tsMount()){
+      var n = 0, t = setInterval(function(){
+        n++; if(tsMount() || n > 40){ clearInterval(t); }
+      }, 250);
+    }
+  }
 
   function parseDomains(v){
     return v.split(/[,\n，、]+/).map(function(s){ return s.trim(); }).filter(Boolean);
@@ -563,6 +565,7 @@ function tsErr(c){ window.__tsToken=''; var b=document.getElementById('go'); if(
     var h = location.hostname;
     if(h && h !== 'localhost' && h !== '127.0.0.1' && !$('domains').value){ $('domains').value = h; }
   })();
+  tsRemount();
   setTimeout(function(){ selectIssuer(ISSUER_CHOICE); }, 30);
   $('dl_ca').addEventListener('click', function(){
     var ca = ensureCA();
