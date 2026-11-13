@@ -168,7 +168,7 @@
 
   <div class="card" id="cabox">
     <label>根证书 · Free Issuance CA</label>
-    <div class="hint" id="ca_status">根证书固定唯一，有效期 20 年，保存后一直复用，不重新生成；下面的指纹就是唯一凭据。</div>
+    <div class="hint" id="ca_status">根证书尚未生成。有效期 20 年，创建后一直复用、不再重新生成；下面的指纹就是唯一凭据。</div>
     <div class="kv"><span>根证书名称</span><span id="caNameTxt">CN=Free Issuance Root CA, O=Free Issuance</span></div>
     <div class="kv"><span>SHA-256 指纹</span><span id="ca_fp" style="word-break:break-all;text-align:right">—</span></div>
     <div class="btnline" style="margin-top:12px">
@@ -379,7 +379,7 @@
     var ca;
     try{ ca = ensureCA(); }catch(e){ return; }
     $('ca_fp').textContent = caFingerprint(ca.cert);
-    $('ca_status').textContent = '根证书已就绪（有效期 20 年）。装进系统后，本站生成的证书就会被信任。';
+    $('ca_status').textContent = '根证书还没生成，点「生成证书」时才会创建（有效期 20 年）。装进系统后，本站生成的证书就会被信任。';
   }
 
   function dstr(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
@@ -479,6 +479,7 @@
         $('ngx_conf').value = cf.ngx;
         $('apa_conf').value = cf.apa;
         $('outbox').style.display = 'block';
+        refreshCA();
         setStatus('生成完成，证书与私钥已在下方。');
         $('outbox').scrollIntoView({behavior:'smooth', block:'start'});
       }catch(e){
@@ -539,7 +540,6 @@
     download('rootCA.crt', forge.pki.certificateToPem(ca.cert), 'application/x-x509-ca-cert');
     setStatus('已下载根证书 rootCA.crt，请在设备里安装。');
   });
-  setTimeout(refreshCA, 50);
   function copyArea(id, msg){
     var el = $(id); el.select();
     if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(el.value).then(function(){ setStatus(msg); }); }
