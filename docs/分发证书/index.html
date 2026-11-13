@@ -781,7 +781,14 @@ function tsErr(c){ window.__tsToken=''; var b=document.getElementById('go'); if(
       el('acme_step2').style.display = 'block';
       say('订单已创建。把下面这条 TXT 加到 DNS，确认生效后点第 2 步。');
     }catch(e){
-      say('出错：' + e.message, 'err');
+      var msg = (e && e.message) ? e.message : String(e);
+      if(/rateLimited/i.test(msg)){
+        var d = msg.match(/"detail"\s*:\s*"([^"]+)"/);
+        msg = 'Let\u2019s Encrypt 频率限制：' + (d ? d[1] : '短时间内签发过多') + '。这不是人机验证的问题，等限制解除再来，或换一个根域名签发。';
+      } else if(/rejectedIdentifier/i.test(msg)){
+        msg = '这个域名 Let\u2019s Encrypt 不接受（保留或不允许的域名），换一个你自己的域名再试。';
+      }
+      say('出错：' + msg, 'err');
     }
   }
 
