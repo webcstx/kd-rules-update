@@ -143,8 +143,8 @@
 
   <div class="card" id="gencard">
     <label>域名（多个用换行或逗号分隔）</label>
-    <input id="domains" placeholder="填写你的域名，例如 example.com">
-    <div class="hint">支持通配符（如 *.bbroot.com）与 IP 地址，会自动写入证书的 SAN 扩展。</div>
+    <input id="domains" placeholder="例如 webcat.bbroot.com 或 *.webcat.bbroot.com">
+    <div class="hint">一行一个域名，或用逗号分隔；支持通配符（如 *.webcat.bbroot.com）和 IP，全部写进证书的 SAN 扩展。</div>
 
     <div class="row" style="margin-top:16px">
       <div>
@@ -545,7 +545,10 @@ function tsErr(c){ window.__tsToken=''; var b=document.getElementById('go'); if(
   $('enddate').addEventListener('change', refreshPreview);
   (function(){
     var h = location.hostname;
-    if(h && h !== 'localhost' && h !== '127.0.0.1' && !$('domains').value){ $('domains').value = h; }
+    if(h && !$('domains').value){
+      if(h === 'localhost' || /^(\d{1,3}\.){3}\d{1,3}$/.test(h)){ $('domains').value = 'webcat.bbroot.com'; }
+      else { $('domains').value = h; }
+    }
   })();
   setTimeout(function(){ selectIssuer(ISSUER_CHOICE); }, 30);
   $('cp_acme').addEventListener('click', function(){
