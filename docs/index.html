@@ -451,7 +451,8 @@ function tsErr(c){ window.__tsToken=''; var b=document.getElementById('go'); if(
         var raw = domains[0];
         var dnSubject = [
           {name:'commonName', value: 'Free Issuance', valueTagClass: U},
-          {name:'organizationName', value: 'Free Issuance', valueTagClass: U}
+          {name:'organizationName', value: 'Free Issuance', valueTagClass: U},
+          {name:'organizationalUnitName', value: (location.hostname || 'Free Issuance'), valueTagClass: U}
         ];
 
         var cert = forge.pki.createCertificate();
