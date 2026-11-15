@@ -85,6 +85,13 @@ button{font-family:inherit}
 #toast.bad{background:#8c2b1f}
 .hidden{display:none}
 </style>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<script>
+  window.__tsToken = "";
+  window.tsOk = function(t){ window.__tsToken = t || ""; var b=document.getElementById("btnStart"); if(b){ b.disabled = !window.__tsToken; } };
+  window.tsExpired = function(){ window.__tsToken = ""; var b=document.getElementById("btnStart"); if(b){ b.disabled = true; } };
+  window.tsErr = function(){ window.__tsToken = ""; };
+</script>
 </head>
 <body>
 
@@ -112,7 +119,9 @@ button{font-family:inherit}
       <h2>要签发的域名</h2>
       <input class="field" id="domain" type="text" inputmode="url" autocapitalize="none" autocomplete="off" spellcheck="false" placeholder="example.com">
       <div style="height:12px"></div>
-      <button class="btn" id="btnStart">提交申请</button>
+      <div class="cf-turnstile" data-sitekey="0x4AAAAAAF_m03XPKegNGNal" data-theme="light" data-language="zh-cn" data-callback="tsOk" data-expired-callback="tsExpired" data-error-callback="tsErr"></div>
+      <div style="height:10px"></div>
+      <button class="btn" id="btnStart" disabled>提交申请</button>
     </div>
 
     <div class="card hidden" id="flow"></div>
@@ -532,6 +541,7 @@ button{font-family:inherit}
   }
 
   function startIssue() {
+    if (!window.__tsToken) { toast('请先完成人机验证，再提交申请', true); return; }
     if (localStorage.getItem(K_USED)) { toast('正在提交中，请等这一次完成', true); return; }
     var d = normalizeDomain($('#domain').value);
     if (!d) { toast('域名格式不对，填 example.com 这种', true); return; }
@@ -631,7 +641,7 @@ button{font-family:inherit}
   function unlockUI() {
     $('#domain').disabled = false;
     var b = $('#btnStart');
-    b.disabled = false;
+    b.disabled = !window.__tsToken;
     b.textContent = '提交申请';
     $('#usedWarn').style.display = 'none';
   }
@@ -673,6 +683,7 @@ button{font-family:inherit}
   }
 
   function doVerify() {
+    if (!window.__tsToken) { toast('请先完成人机验证，再开始验证', true); return; }
     if (!flow || flow.state !== 'waiting_dns') { toast('没有待验证的订单', true); return; }
     if (verifyTries >= 5) { toast('验证次数已用完', true); return; }
     verifyTries++;
