@@ -84,6 +84,8 @@ button{font-family:inherit}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 #toast.bad{background:#8c2b1f}
 .hidden{display:none}
+.foothost{position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:40;font-size:12px;color:#68727f;background:rgba(255,255,255,.92);border:1px solid #e3e7ee;border-radius:10px;padding:6px 10px;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.foothost:active{background:#eef1f5}
 </style>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <script>
@@ -129,6 +131,7 @@ button{font-family:inherit}
 
 </main>
 
+<a class="foothost" href="https://github.com/webcstx/kd-rules-update" target="_blank" rel="noopener">webcstx/kd-rules-update</a>
 <div id="toast"></div>
 
 <script>
