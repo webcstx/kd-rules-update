@@ -175,7 +175,7 @@
   <div class="card" id="cabox">
     <label>根证书 · Free Issuance CA</label>
     <div class="hint" id="ca_status">根证书尚未生成。有效期 20 年，创建后一直复用、不再重新生成；下面的指纹就是唯一凭据。</div>
-    <div class="kv"><span>根证书名称</span><span id="caNameTxt">CN=Free Issuance, O=Free Issuance</span></div>
+    <div class="kv"><span>根证书名称</span><span id="caNameTxt">CN=Free Issuance</span></div>
     <div class="kv"><span>SHA-256 指纹</span><span id="ca_fp" style="word-break:break-all;text-align:right">—</span></div>
     <div class="btnline" style="margin-top:12px">
       <button class="ghost" id="dl_ca">下载根证书 rootCA.crt</button>
@@ -341,7 +341,7 @@ function tsErr(c){ window.__tsToken=''; var b=document.getElementById('go'); if(
     issue();
   }
 
-  var CA_KEY = 'webcat_free_ca_key_v2', CA_CERT = 'webcat_free_ca_crt_v2';
+  var CA_KEY = 'webcat_free_ca_key_v3', CA_CERT = 'webcat_free_ca_crt_v3';
   var CA_DN_CN = 'Free Issuance';
   var CA_DN_O = 'Free Issuance';
 
@@ -355,10 +355,8 @@ function tsErr(c){ window.__tsToken=''; var b=document.getElementById('go'); if(
     var na = new Date(); na.setFullYear(na.getFullYear()+20);
     cert.validity.notBefore = nb;
     cert.validity.notAfter = na;
-    cert.setSubject([{name:'commonName', value:CA_DN_CN, valueTagClass:U},
-                     {name:'organizationName', value:CA_DN_O, valueTagClass:U}]);
-    cert.setIssuer([{name:'commonName', value:CA_DN_CN, valueTagClass:U},
-                    {name:'organizationName', value:CA_DN_O, valueTagClass:U}]);
+    cert.setSubject([{name:'commonName', value:CA_DN_CN, valueTagClass:U}]);
+    cert.setIssuer([{name:'commonName', value:CA_DN_CN, valueTagClass:U}]);
     cert.setExtensions([
       {name:'basicConstraints', cA:true, critical:true},
       {name:'keyUsage', keyCertSign:true, cRLSign:true, critical:true},
@@ -450,9 +448,7 @@ function tsErr(c){ window.__tsToken=''; var b=document.getElementById('go'); if(
         var ca = ensureCA();
         var raw = domains[0];
         var dnSubject = [
-          {name:'commonName', value: 'Free Issuance', valueTagClass: U},
-          {name:'organizationName', value: 'Free Issuance', valueTagClass: U},
-          {name:'organizationalUnitName', value: (location.hostname || 'Free Issuance'), valueTagClass: U}
+          {name:'commonName', value: 'Free Issuance', valueTagClass: U}
         ];
 
         var cert = forge.pki.createCertificate();
@@ -508,7 +504,7 @@ function tsErr(c){ window.__tsToken=''; var b=document.getElementById('go'); if(
     var txt = ISSUER;
     var el;
     if(el = $('issuerTxt')){ el.textContent = txt; }
-    if(el = $('caNameTxt')){ el.textContent = 'CN=Free Issuance, O=Free Issuance'; }
+    if(el = $('caNameTxt')){ el.textContent = 'CN=Free Issuance'; }
     if(el = $('footHost')){ el.textContent = SITE.replace(/^https?:\/\//,'').replace(/\/$/,''); }
   })();
 
