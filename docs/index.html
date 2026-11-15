@@ -142,7 +142,7 @@
   </div>
 
   <div class="card" id="gencard">
-    <label>域名（多个用换行或逗号分隔）</label>
+    <label><img src="assets/cloudflare.png" alt="" style="width:18px;height:18px;vertical-align:-3px;margin-right:8px">域名（多个用换行或逗号分隔）</label>
     <input id="domains" placeholder="例如 webcat.bbroot.com 或 *.webcat.bbroot.com">
     <div class="hint">一行一个域名，或用逗号分隔；支持通配符（如 *.webcat.bbroot.com）和 IP，全部写进证书的 SAN 扩展。</div>
 
@@ -175,7 +175,7 @@
   <div class="card" id="cabox">
     <label>根证书 · Free Issuance CA</label>
     <div class="hint" id="ca_status">根证书尚未生成。有效期 20 年，创建后一直复用、不再重新生成；下面的指纹就是唯一凭据。</div>
-    <div class="kv"><span>根证书名称</span><span id="caNameTxt">CN=Free Issuance Root CA, O=Free Issuance</span></div>
+    <div class="kv"><span>根证书名称</span><span id="caNameTxt">CN=Free Issuance, O=Free Issuance</span></div>
     <div class="kv"><span>SHA-256 指纹</span><span id="ca_fp" style="word-break:break-all;text-align:right">—</span></div>
     <div class="btnline" style="margin-top:12px">
       <button class="ghost" id="dl_ca">下载根证书 rootCA.crt</button>
@@ -341,8 +341,8 @@ function tsErr(c){ window.__tsToken=''; var b=document.getElementById('go'); if(
     issue();
   }
 
-  var CA_KEY = 'webcat_free_ca_key', CA_CERT = 'webcat_free_ca_crt';
-  var CA_DN_CN = 'Free Issuance Root CA';
+  var CA_KEY = 'webcat_free_ca_key_v2', CA_CERT = 'webcat_free_ca_crt_v2';
+  var CA_DN_CN = 'Free Issuance';
   var CA_DN_O = 'Free Issuance';
 
   function buildCA(){
@@ -508,7 +508,7 @@ function tsErr(c){ window.__tsToken=''; var b=document.getElementById('go'); if(
     var txt = ISSUER;
     var el;
     if(el = $('issuerTxt')){ el.textContent = txt; }
-    if(el = $('caNameTxt')){ el.textContent = 'CN=Free Issuance Root CA, O=Free Issuance'; }
+    if(el = $('caNameTxt')){ el.textContent = 'CN=Free Issuance, O=Free Issuance'; }
     if(el = $('footHost')){ el.textContent = SITE.replace(/^https?:\/\//,'').replace(/\/$/,''); }
   })();
 
