@@ -1,602 +1,798 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FreeIssue · SSL 证书分发</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>证书代签</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230b7a5c'/%3E%3Cpath d='M16 6l8 3v7c0 5-3.4 8.6-8 10-4.6-1.4-8-5-8-10V9z' fill='none' stroke='%23fff' stroke-width='2'/%3E%3Cpath d='M12.5 16.5l2.6 2.6 4.6-5' fill='none' stroke='%23fff' stroke-width='2'/%3E%3C/svg%3E">
 <style>
-  :root{
-    --pg1:#f3fbf7; --pg2:#eef6ff; --pg3:#fdf9f2;
-    --card:#ffffff; --card2:#f7fbfa; --line:#d8e7e2; --line2:#cbe0f0;
-    --fg:#0f2b33; --fg2:#31525c; --dim:#6f8a94;
-    --acc:#0fa47a; --acc2:#0d84c9; --accsoft:#e6f7f0;
-    --warn:#b8730a; --err:#c2413d;
-    --shadow:0 10px 30px rgba(24,80,96,.10); --shadow2:0 3px 10px rgba(24,80,96,.07);
-  }
-  *{box-sizing:border-box}
-  html{-webkit-text-size-adjust:100%}
-  body{
-    margin:0; min-height:100vh;
-    background:
-      radial-gradient(760px 420px at 6% -6%, rgba(15,164,122,.14), transparent 62%),
-      radial-gradient(720px 460px at 96% 0%, rgba(13,132,201,.13), transparent 64%),
-      radial-gradient(680px 420px at 50% 108%, rgba(255,203,120,.14), transparent 66%),
-      linear-gradient(168deg,var(--pg1) 0%,var(--pg2) 48%,var(--pg3) 100%);
-    color:var(--fg);
-    font:15px/1.72 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans SC",sans-serif;
-    padding:24px 16px 64px;
-  }
-  .wrap{max-width:880px;margin:0 auto}
-
-  /* 横幅 */
-  .hero{border-radius:22px;overflow:hidden;background:#fff;
-    border:1px solid var(--line2);box-shadow:var(--shadow);margin-bottom:16px}
-  .hero img{display:block;width:100%;height:auto}
-  .hero-head{padding:0 4px;margin-bottom:18px}
-  .tag{display:inline-block;font-size:11.5px;letter-spacing:.8px;text-transform:uppercase;
-    color:#0a7a5c;background:var(--accsoft);border:1px solid #bfe8d9;border-radius:999px;padding:3px 11px;margin-bottom:10px}
-  h1{font-size:29px;line-height:1.25;margin:0 0 8px;font-weight:800;letter-spacing:.4px;color:#0c2a30}
-  .sub{color:var(--fg2);font-size:13px;margin:0;max-width:600px}
-  .sub code{color:#0a7a5c;background:var(--accsoft);padding:1px 6px;border-radius:6px;font-size:12.5px}
-
-  /* 卡片 */
-  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;
-    padding:20px 22px;margin-bottom:15px;box-shadow:var(--shadow2)}
-  .card>label{display:flex;align-items:center;gap:9px;font-size:14px;font-weight:800;color:#0c2a30;margin-bottom:11px}
-  .card>label::before{content:"";width:4px;height:15px;border-radius:3px;
-    background:linear-gradient(180deg,var(--acc),var(--acc2))}
-
-  input,select,textarea{width:100%;background:var(--card2);border:1px solid var(--line);color:var(--fg);
-    border-radius:12px;padding:12px 13px;font-size:14px;font-family:inherit;outline:none;transition:.18s}
-  input::placeholder{color:#94aab2}
-  input:focus,select:focus,textarea:focus{background:#fff;border-color:var(--acc);box-shadow:0 0 0 3px rgba(15,164,122,.14)}
-  input[type=date]{color-scheme:light}
-  textarea{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;line-height:1.62;height:160px;resize:vertical}
-  .row{display:flex;gap:14px}
-  .row>div{flex:1}
-  .hint{color:var(--dim);font-size:12px;margin-top:8px;line-height:1.7}
-  .hint code{color:#0a7a5c;background:var(--accsoft);padding:1px 5px;border-radius:5px}
-
-  /* 按钮 */
-  button{background:linear-gradient(135deg,#12b184,#0d9a86);color:#fff;border:0;border-radius:12px;
-    padding:13px 20px;font-size:15px;font-weight:800;cursor:pointer;width:100%;transition:.18s;
-    box-shadow:0 8px 20px rgba(15,164,122,.28)}
-  button:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 12px 24px rgba(15,164,122,.34)}
-  button:disabled{opacity:.55;cursor:not-allowed;box-shadow:none;transform:none}
-  .ghost{background:#fff;border:1px solid var(--line);color:#134e4a;font-weight:700;font-size:13px;
-    padding:10px 15px;width:auto;box-shadow:var(--shadow2);border-radius:11px}
-  .ghost:hover:not(:disabled){background:var(--accsoft);border-color:#a9e0cf;color:#0a7a5c}
-  .btnline{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
-
-  .kv{display:flex;justify-content:space-between;gap:12px;font-size:13px;padding:10px 0;border-bottom:1px solid #eef4f3}
-  .kv:last-child{border-bottom:0}
-  .kv span:first-child{color:var(--dim);flex:0 0 auto}
-  .kv span:last-child{text-align:right;word-break:break-all;color:#123c45}
-
-  .out{display:none}
-  .ok{color:var(--acc);font-weight:800}
-  .warnbox{background:#fff9ec;border:1px solid #f5dfae;border-radius:14px;padding:15px 16px;font-size:13.5px;line-height:1.78;color:#5a4620}
-  .warnbox b{color:var(--warn)}
-  .errbox{background:#fdf1f0;border:1px solid #f2cdc9;border-radius:14px;padding:15px 16px;font-size:13.5px;display:none;color:#8d2f2b}
-
-  footer{color:var(--dim);font-size:12px;text-align:center;margin-top:28px;line-height:1.9}
-  .foot-links{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:10px}
-  .foot-links a{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--line);
-    border-radius:999px;padding:7px 14px;font-size:12.5px;font-weight:600;color:#123c45;box-shadow:var(--shadow2)}
-  .foot-links a:hover{background:var(--accsoft);border-color:#a9e0cf;color:#0a7a5c;text-decoration:none}
-  .foot-meta{color:#86a0aa}
-  footer b{color:#123c45;font-weight:700}
-  a{color:var(--acc);text-decoration:none}
-  a:hover{text-decoration:underline}
-
-  .units{display:flex;gap:8px}
-  .unit{flex:1;min-height:46px;padding:0 12px;background:var(--card2);border:1px solid var(--line);color:var(--dim);border-radius:11px;font-size:15px;font-weight:800;cursor:pointer;width:auto;box-shadow:none}
-  .unit.on{background:var(--accsoft);border-color:#9ddcc8;color:#0a7a5c}
-
-  /* 颁发机构选项 */
-  .iss{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;
-    background:var(--card2);border:1px solid var(--line);border-radius:14px;margin-bottom:10px;cursor:pointer;transition:.18s}
-  .iss:hover{border-color:#b9ddd1;background:#fff;box-shadow:var(--shadow2);transform:translateY(-1px)}
-  .iss.on{border-color:#8ed3bd;background:linear-gradient(135deg,#e9f9f3,#eaf4fd);
-    box-shadow:0 6px 16px rgba(15,164,122,.12)}
-  .iss .ic{flex:0 0 46px;width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;
-    background:#fff;border:1px solid var(--line);box-shadow:var(--shadow2)}
-  .iss .ic svg{width:28px;height:28px;display:block}
-  .iss.on .ic{border-color:#b7e5d6;background:#fff}
-  .iss .txt{flex:1;min-width:0}
-  .iss b{font-size:14px;color:#0c2a30;font-weight:800}
-  .iss small{display:block;color:var(--dim);font-size:12px;margin-top:4px;line-height:1.6}
-  .iss .badge{font-size:11px;color:#0a7a5c;background:var(--accsoft);border:1px solid #b7e5d6;border-radius:999px;padding:3px 10px;white-space:nowrap}
-  .iss .badge.pub{color:#0b6ba5;background:#e9f2fc;border-color:#bfdcf3}
-
-  @media (max-width:640px){
-    body{padding:16px 12px 56px}
-    h1{font-size:23px}
-    .sub{font-size:12.5px}
-    .card{padding:16px}
-    .row{flex-direction:column}
-    .kv{flex-direction:column;gap:2px}
-    .kv span:last-child{text-align:left}
-  }
+:root{
+  --bg:#f1f3f6; --card:#fff; --ink:#12181f; --sub:#68727f; --line:#e3e7ee;
+  --accent:#0b7a5c; --accent-soft:#e4f3ee; --warn:#a8601a; --warn-soft:#fbf0e2;
+  --bad:#ab3527; --bad-soft:#faebe8;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Courier New",monospace;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg);color:var(--ink);font-size:15px;line-height:1.6;padding-bottom:76px;
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit}
+.topbar{position:sticky;top:0;z-index:20;background:rgba(241,243,246,.9);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);padding:12px 16px;display:flex;align-items:center;gap:10px}
+.topbar .logo{width:32px;height:32px;border-radius:9px;background:var(--accent);display:grid;place-items:center;flex:0 0 auto}
+.topbar .logo svg{width:19px;height:19px}
+.topbar .name{font-weight:600;font-size:16px;letter-spacing:.4px}
+.topbar .sub{font-size:12px;color:var(--sub);margin-top:-2px}
+.topbar .dot{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--sub)}
+.topbar .dot i{width:7px;height:7px;border-radius:50%;background:#c2c9d3;display:block;transition:.2s}
+.topbar .dot i.ok{background:var(--accent)}
+.topbar .dot i.run{background:var(--warn)}
+.topbar .dot i.off{background:var(--bad)}
+.wrap{padding:14px 16px 8px;max-width:620px;margin:0 auto}
+.view{display:none}
+.view.on{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px}
+.card h2{margin:0 0 4px;font-size:14px;font-weight:600;letter-spacing:.3px}
+.card p.tip{margin:6px 0 0;font-size:12.5px;color:var(--sub);line-height:1.6}
+.lbl{font-size:13px;color:var(--sub);margin-bottom:6px;display:block}
+.field{width:100%;padding:12px 13px;font-size:16px;border:1px solid var(--line);border-radius:11px;background:#fafbfc;color:var(--ink);outline:none;font-family:var(--mono);letter-spacing:.2px}
+.field:focus{border-color:var(--accent);background:#fff}
+.field::placeholder{font-family:-apple-system,"PingFang SC",sans-serif;color:#a9b2bf;letter-spacing:0}
+.btn{width:100%;border:0;border-radius:11px;padding:13px 16px;font-size:15px;font-weight:600;background:var(--accent);color:#fff;cursor:pointer;letter-spacing:.5px}
+.btn:disabled{background:#cfd6df;color:#fff;cursor:not-allowed}
+.btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line);font-weight:500}
+.btn.line{background:var(--accent-soft);color:var(--accent);border:1px solid #cde9df}
+.btn.sm{width:auto;padding:8px 14px;font-size:13px;border-radius:9px}
+.banner{border-radius:12px;padding:11px 13px;font-size:13px;display:flex;gap:9px;align-items:flex-start;background:var(--warn-soft);color:#7c4a13;border:1px solid #f1dfc6;margin-bottom:12px;line-height:1.55}
+.banner.bad{background:var(--bad-soft);color:#8c2b1f;border-color:#f0cec7}
+.banner.ok{background:#e6f4ee;color:#046c49;border-color:#c9e7db}
+.banner svg{width:16px;height:16px;flex:0 0 auto;margin-top:2px}
+.flowhead{display:flex;align-items:baseline;gap:8px;margin-bottom:12px}
+.flowhead .dom{font-family:var(--mono);font-size:15px;font-weight:600;word-break:break-all}
+.chip{display:inline-block;font-size:11.5px;padding:3px 9px;border-radius:20px;font-weight:600;white-space:nowrap;margin-left:auto}
+.chip.wait{background:var(--warn-soft);color:var(--warn)}
+.chip.ok{background:var(--accent-soft);color:var(--accent)}
+.chip.err{background:var(--bad-soft);color:var(--bad)}
+.steps{list-style:none;margin:0 0 14px;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.steps li{font-size:11.5px;color:var(--sub);position:relative;padding-top:16px;letter-spacing:.2px}
+.steps li::before{content:"";position:absolute;left:0;top:0;width:100%;height:3px;border-radius:2px;background:#e6eaf0}
+.steps li.done{color:var(--accent)}
+.steps li.done::before{background:var(--accent)}
+.steps li.on{color:var(--ink);font-weight:600}
+.steps li.on::before{background:var(--warn)}
+.rec{border:1px solid var(--line);border-radius:11px;overflow:hidden;margin-bottom:12px}
+.rec-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line)}
+.rec-row:last-child{border-bottom:0}
+.rec-row .k{font-size:12.5px;color:var(--sub);flex:0 0 66px}
+.rec-row .v{flex:1;min-width:0;font-family:var(--mono);font-size:12.5px;word-break:break-all}
+.cp{flex:0 0 auto;border:1px solid var(--line);background:#fff;color:var(--sub);border-radius:8px;padding:5px 9px;font-size:12px;cursor:pointer}
+.cp:active{background:#eef1f5}
+.logbox{margin-top:12px;border-top:1px dashed var(--line);padding-top:10px}
+.logline{font-family:var(--mono);font-size:11.5px;color:#5d6773;line-height:1.75;word-break:break-all}
+.logline.ok{color:var(--accent)}
+.logline.err{color:var(--bad)}
+.certbox{border:1px solid #c9e7dc;background:#f5fbf9;border-radius:11px;padding:12px;margin-bottom:12px}
+.certbox .row{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;color:#0a5c46;padding:3px 0}
+.certbox .row b{font-family:var(--mono);font-weight:600}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:rgba(255,255,255,.94);backdrop-filter:blur(14px);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(3,1fr);padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
+.tab{border:0;background:none;padding:6px 0 4px;display:flex;flex-direction:column;align-items:center;gap:3px;color:#8b95a3;font-size:11.5px;cursor:pointer;letter-spacing:.3px}
+.tab svg{width:22px;height:22px}
+.tab.on{color:var(--accent);font-weight:600}
+#toast{position:fixed;left:50%;top:74px;transform:translateX(-50%) translateY(-12px);background:#12181f;color:#fff;font-size:13px;padding:10px 16px;border-radius:10px;max-width:80vw;text-align:center;opacity:0;pointer-events:none;transition:.22s;z-index:50;line-height:1.5}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.bad{background:#8c2b1f}
+.hidden{display:none}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <section class="hero">
-    <img src="assets/hero.jpg" alt="Free Issuance SSL 证书">
+
+<header class="topbar">
+  <div class="logo">
+    <svg viewBox="0 0 24 24" fill="none"><path d="M12 3l8 3v6c0 4.6-3.2 7.9-8 9-4.8-1.1-8-4.4-8-9V6z" stroke="#fff" stroke-width="1.8"/><path d="M8.6 11.9l2.5 2.5 4.3-4.6" stroke="#fff" stroke-width="1.8"/></svg>
+  </div>
+  <div>
+    <div class="name">证书代签</div>
+    <div class="sub">官方 ACME 直连 · 无需密钥</div>
+  </div>
+  <div class="dot"><i id="netDot"></i><span id="netTxt">空闲</span></div>
+</header>
+
+<main class="wrap">
+
+  <!-- 视图：签发 -->
+  <section class="view on" id="view-issue">
+    <div class="banner" id="usedWarn" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 8v5m0 3v.5" stroke="currentColor" stroke-width="1.8"/></svg>
+      <div>本次正在处理，完成后可以修改域名重新提交。</div>
+    </div>
+
+    <div class="card">
+      <h2>要签发的域名</h2>
+      <input class="field" id="domain" type="text" inputmode="url" autocapitalize="none" autocomplete="off" spellcheck="false" placeholder="example.com">
+      <div style="height:12px"></div>
+      <button class="btn" id="btnStart">提交申请</button>
+    </div>
+
+    <div class="card hidden" id="flow"></div>
   </section>
-  <section class="hero-head">
-    <span class="tag">Free Issuance</span>
-    <h1>自由签发 SSL 证书</h1>
-    <p class="sub">自由签发在浏览器本地生成；选 Let&rsquo;s Encrypt 则向公共 CA 申请。颁发机构标识 <code id="issuerTxt">https://你的域名/Free Issuance</code>。</p>
-  </section>
 
-  <div class="card">
-    <label>证书颁发机构</label>
-    <div class="hint" style="margin-top:0;margin-bottom:12px">自由签发：证书在本页本地生成，到期日自己选，不向公共 CA 申请、不查 DNS。Let&rsquo;s Encrypt：真的向公共 CA 申请，需要加一条 DNS TXT。</div>
+</main>
 
-    <div class="iss on" data-k="local"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.4 4.7 5.4v5.7c0 4.7 3.1 8.6 7.3 10.5 4.2-1.9 7.3-5.8 7.3-10.5V5.4z" fill="#e8f8f1" stroke="#0fa47a" stroke-width="1.6"/><rect x="9.2" y="10.9" width="5.6" height="4.8" rx="1.2" fill="#0fa47a"/><path d="M10.5 10.9v-1.5a1.8 1.8 0 0 1 3.6 0v1.5" fill="none" stroke="#0fa47a" stroke-width="1.5"/></svg></span><div class="txt"><b>自由签发（Free Issuance）</b><small>本页自建根证书签发，到期日自选，设备要先装 rootCA.crt</small></div>
-    </div>
-
-    <div class="hint" id="iss_note" style="white-space:pre-wrap;margin-top:12px">当前选择：自由签发（Free Issuance），证书在本页本地生成，到期日由你选。</div>
-  </div>
-
-  <div class="card" id="gencard">
-    <label><img src="assets/cloudflare.png" alt="" style="width:18px;height:18px;vertical-align:-3px;margin-right:8px">域名（多个用换行或逗号分隔）</label>
-    <input id="domains" placeholder="例如 webcat.bbroot.com 或 *.webcat.bbroot.com">
-    <div class="hint">一行一个域名，或用逗号分隔；支持通配符（如 *.webcat.bbroot.com）和 IP，全部写进证书的 SAN 扩展。</div>
-
-    <div class="row" style="margin-top:16px">
-      <div>
-        <label>到期日期（直接选结束那天，不按天数往后推算）</label>
-        <input id="enddate" type="date" style="width:100%;font-size:20px;font-weight:700;text-align:center;padding:14px 12px">
-        <div class="hint" id="preview">到期时间：—</div>
-      </div>
-      <div>
-        <label>密钥长度</label>
-        <select id="bits">
-          <option value="2048" selected>RSA 2048（推荐，生成快）</option>
-          <option value="4096">RSA 4096（更慢，强度更高）</option>
-        </select>
-        <div class="hint">浏览器本地生成，2048 位一般需要 1 到 3 秒。</div>
-      </div>
-    </div>
-
-    <div style="margin-top:18px">
-      <div id="tsbox" style="display:flex;justify-content:center;margin-bottom:12px">
-        <div class="cf-turnstile" data-sitekey="0x4AAAAAAF_m03XPKegNGNal" data-theme="light" data-language="zh-cn"
-             data-callback="tsOk" data-expired-callback="tsExpired" data-error-callback="tsErr"></div>
-      </div>
-      <button id="go" disabled>生成证书</button>
-    </div>
-    <div class="hint" id="status"></div>
-  </div>
-
-  <div class="card" id="cabox">
-    <label>根证书 · Free Issuance CA</label>
-    <div class="hint" id="ca_status">根证书尚未生成。有效期 20 年，创建后一直复用、不再重新生成；下面的指纹就是唯一凭据。</div>
-    <div class="kv"><span>根证书名称</span><span id="caNameTxt">CN=Free Issuance</span></div>
-    <div class="kv"><span>SHA-256 指纹</span><span id="ca_fp" style="word-break:break-all;text-align:right">—</span></div>
-    <div class="btnline" style="margin-top:12px">
-      <button class="ghost" id="dl_ca">下载根证书 rootCA.crt</button>
-    </div>
-    <div class="hint">安装位置：安卓「设置 → 安全 → 加密与凭据 → 安装证书 → CA 证书」；Windows 选「受信任的根证书颁发机构」；iOS 用描述文件安装后到「关于本机 → 证书信任设置」里开启。</div>
-  </div>
-
-  <div class="card" id="acmebox">
-    <label>ACME 目录接口</label>
-    <div class="hint" style="margin-top:0">Let&rsquo;s Encrypt ACME v2 目录地址，可直接填进 acme.sh / certbot 等兼容客户端。</div>
-    <div class="kv"><span>目录地址</span><span id="acme_dir" style="word-break:break-all;text-align:right">https://acme-v02.api.letsencrypt.org/directory</span></div>
-    <div class="btnline" style="margin-top:12px">
-      <button class="ghost" id="cp_acme">复制接口地址</button>
-    </div>
-  </div>
-
-
-  <div class="card errbox" id="errbox"></div>
-
-  <div class="card out" id="outbox">
-    <div class="kv"><span>状态</span><span class="ok">生成完成</span></div>
-    <div class="kv"><span>域名</span><span id="o_domains"></span></div>
-    <div class="kv"><span>颁发机构</span><span id="o_issuer"></span></div>
-    <div class="kv"><span>生效时间</span><span id="o_from"></span></div>
-    <div class="kv"><span>失效时间</span><span id="o_to"></span></div>
-    <div class="kv"><span>密钥</span><span id="o_bits"></span></div>
-    <div class="kv"><span>SHA-256 指纹</span><span id="o_fp" style="word-break:break-all;text-align:right"></span></div>
-
-    <div style="margin-top:16px">
-      <label>证书（cert.pem）</label>
-      <textarea id="cert" readonly></textarea>
-      <div class="btnline">
-        <button class="ghost" id="dl_cert">下载 cert.pem</button>
-        <button class="ghost" id="dl_chain">下载 fullchain.pem</button>
-        <button class="ghost" id="cp_cert">复制证书</button>
-      </div>
-    </div>
-
-    <div style="margin-top:16px">
-      <label>私钥（key.pem，务必自行保管）</label>
-      <textarea id="key" readonly></textarea>
-      <div class="btnline">
-        <button class="ghost" id="dl_key">下载 key.pem</button>
-        <button class="ghost" id="cp_key">复制私钥</button>
-      </div>
-    </div>
-
-    <div style="margin-top:16px">
-      <label>加密导出（PKCS#12 容器，推荐用于传输）</label>
-      <div style="display:flex;gap:10px;align-items:center">
-        <input id="p12pass" type="password" placeholder="设置导出口令（至少 6 位）" style="flex:1">
-        <button class="ghost" id="dl_p12">导出 .p12</button>
-      </div>
-      <div class="hint">容器内同时包含证书与私钥，必须用口令才能打开；传输走 HTTPS 或离线拷贝，不要明文发私钥。</div>
-    </div>
-
-    <div style="margin-top:16px">
-      <label>在你的服务器上启用 HTTPS</label>
-      <div class="hint">把 cert.pem 与 key.pem 传到服务器（示例路径 /etc/ssl/webcat/），再按服务器类型复制对应配置，把域名处替换成你生成的域名。</div>
-      <div style="margin-top:10px"><b>Nginx</b></div>
-      <textarea id="ngx_conf" readonly style="min-height:170px"></textarea>
-      <div class="btnline"><button class="ghost" id="cp_ngx">复制 Nginx 配置</button></div>
-      <div style="margin-top:10px"><b>Apache httpd</b></div>
-      <textarea id="apa_conf" readonly style="min-height:140px"></textarea>
-      <div class="btnline"><button class="ghost" id="cp_apa">复制 Apache 配置</button></div>
-      <div class="hint">改完先自检再重载：Nginx 用 <b>nginx -t &amp;&amp; nginx -s reload</b>；Apache 用 <b>apachectl configtest &amp;&amp; systemctl reload httpd</b>。证书是本站自建 CA 签的，客户端需要先装 rootCA.crt 才会显示为受信任。</div>
-    </div>
-  </div>
-
-  <footer>
-    <div class="foot-links">
-      <a href="https://github.com/webcstx/kd-rules-update" target="_blank" rel="noopener">GitHub 仓库 · webcstx/kd-rules-update</a>
-    </div>
-    <div class="foot-meta"><span id="footHost">—</span> · Free Issuance · 证书生成过程完全在本地浏览器完成</div>
-  </footer>
-</div>
+<div id="toast"></div>
 
 <script>
-window.__tsToken = '';
-function tsOk(t){ window.__tsToken = t; var b=document.getElementById('go'); if(b){ b.disabled=false; } }
-function tsExpired(){ window.__tsToken=''; var b=document.getElementById('go'); if(b){ b.disabled=true; } }
-function tsErr(c){ window.__tsToken=''; var b=document.getElementById('go'); if(b){ b.disabled=true; } }
-</script>
-<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
-<script src="forge.min.js"></script>
-<script>
-(function(){
-  // 域名统一从这里取：跟随当前访问地址，不再写死
-  var SITE = (function(){
-    var b = String(location.href).split('?')[0].split('#')[0].replace(/index\.html$/, '');
-    if(!/^http/.test(b)){ b = location.origin + '/'; }
-    if(b.charAt(b.length-1) !== '/'){ b += '/'; }
-    return b;
-  })();
-  var ISSUER = SITE + 'Free Issuance';
-  var $ = function(id){ return document.getElementById(id); };
+(function () {
+  'use strict';
 
-  function parseDomains(v){
-    return v.split(/[,\n，、]+/).map(function(s){ return s.trim(); }).filter(Boolean);
+  var K_USED  = 'acme_used_v1';
+  var K_KEY   = 'acme_key_v1';
+  var K_KID   = 'acme_kid_v1';
+  var K_DOM   = 'acme_domain_v1';
+  var K_STATE = 'acme_state_v1';
+  var K_CERT  = 'acme_cert_v1';
+  var K_CKEY  = 'acme_certkey_v1';   // 证书专用密钥（必须与账户密钥不同）
+  var DIRECTORY = 'https://acme-v02.api.letsencrypt.org/directory';
+
+  var dir, nonce = null, kid = null, keyPair = null, pubJwk = null, certKey = null;
+  var flow = null;   // {domain, orderUrl, authzUrl, chalUrl, token, txt, state}
+
+  function $(s) { return document.querySelector(s); }
+
+  /* ---------- 小工具 ---------- */
+  function toast(msg, bad) {
+    var t = $('#toast');
+    t.textContent = msg;
+    t.className = 'show' + (bad ? ' bad' : '');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(function () { t.className = ''; }, 2600);
   }
-  function isIP(s){
-    return /^(\d{1,3}\.){3}\d{1,3}$/.test(s);
+  function setNet(kind, text) {
+    var d = $('#netDot');
+    d.className = kind ? kind : '';
+    $('#netTxt').textContent = text;
   }
-  function pad(n){ return n<10 ? '0'+n : ''+n; }
-  function fmt(d){
-    return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+
-           pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());
+  function u8cat() {
+    var i, t = 0, a = arguments, out;
+    for (i = 0; i < a.length; i++) { t += a[i].length; }
+    out = new Uint8Array(t);
+    t = 0;
+    for (i = 0; i < a.length; i++) { out.set(a[i], t); t += a[i].length; }
+    return out;
   }
-  function addSpan(base, amount, unit){
-    var d = new Date(base.getTime());
-    if(unit === 'day'){ d.setDate(d.getDate()+amount); }
-    else if(unit === 'year'){ d.setFullYear(d.getFullYear()+amount); }
-    else { d.setMonth(d.getMonth()+amount); }
+  function lenBuf(n) {
+    if (n < 0x80) { return Uint8Array.of(n); }
+    var b = [], x = n, i, out;
+    while (x > 0) { b.unshift(x & 0xff); x >>= 8; }
+    out = new Uint8Array(b.length + 1);
+    out[0] = 0x80 | b.length;
+    for (i = 0; i < b.length; i++) { out[i + 1] = b[i]; }
+    return out;
+  }
+  function der(tag, content) { return u8cat(Uint8Array.of(tag), lenBuf(content.length), content); }
+  function derSeq() { return der(0x30, u8cat.apply(null, arguments)); }
+  function derSet() { return der(0x31, u8cat.apply(null, arguments)); }
+  function derUtf8(s) { return der(0x0c, new TextEncoder().encode(s)); }
+  function derAscii(s) { return der(0x16, new TextEncoder().encode(s)); }
+  function derOctet(b) { return der(0x04, b); }
+  function derBit(b) { return der(0x03, u8cat(Uint8Array.of(0), b)); }
+  function derOid(bytes) { return der(0x06, new Uint8Array(bytes)); }
+
+  function b64u(buf) {
+    var b = new Uint8Array(buf), s = '', i, c;
+    for (i = 0; i < b.length; i += 8192) {
+      c = b.subarray(i, i + 8192);
+      s += String.fromCharCode.apply(null, c);
+    }
+    return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  function b64uStr(str) { return b64u(new TextEncoder().encode(str)); }
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+  /* ---------- 密钥 ---------- */
+  var ALG = { name: 'RSASSA-PKCS1-v1_5', modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: 'SHA-256' };
+
+  function loadKey() { return loadOrGenKey(K_KEY); }
+
+  function loadCertKey() { return loadOrGenKey(K_CKEY); }
+
+  function ensureCertKey() {
+    if (certKey) { return Promise.resolve(); }
+    return loadCertKey().then(function (kp) {
+      certKey = kp;
+      return crypto.subtle.exportKey('jwk', kp.publicKey).then(function (j) {
+        return { e: j.e, kty: j.kty, n: j.n };
+      });
+    });
+  }
+
+  function loadOrGenKey(storeKey) {
+    var cached = localStorage.getItem(storeKey);
+    if (cached) {
+      try {
+        var j = JSON.parse(cached);
+        return Promise.all([
+          crypto.subtle.importKey('jwk', j.priv, ALG, false, ['sign']),
+          crypto.subtle.importKey('jwk', j.pub, ALG, true, ['verify'])
+        ]).then(function (ks) { return { privateKey: ks[0], publicKey: ks[1] }; });
+      } catch (e) { /* 落到重新生成 */ }
+    }
+    return crypto.subtle.generateKey(ALG, true, ['sign', 'verify']).then(function (kp) {
+      return Promise.all([
+        crypto.subtle.exportKey('jwk', kp.privateKey),
+        crypto.subtle.exportKey('jwk', kp.publicKey)
+      ]).then(function (ex) {
+        localStorage.setItem(storeKey, JSON.stringify({ priv: ex[0], pub: ex[1] }));
+        return kp;
+      });
+    });
+  }
+
+  function ensureKey() {
+    if (keyPair) { return Promise.resolve(); }
+    return loadKey().then(setKey);
+  }
+
+  function setKey(kp) {
+    keyPair = kp;
+    return crypto.subtle.exportKey('jwk', kp.publicKey).then(function (j) {
+      pubJwk = { e: j.e, kty: j.kty, n: j.n };
+      return pubJwk;
+    });
+  }
+
+  function thumbprint() {
+    var canonical = '{"e":"' + pubJwk.e + '","kty":"' + pubJwk.kty + '","n":"' + pubJwk.n + '"}';
+    return crypto.subtle.digest('SHA-256', new TextEncoder().encode(canonical)).then(b64u);
+  }
+
+  /* ---------- ACME 网络层 ---------- */
+  function nonceFrom(res) {
+    var n = res.headers.get('Replay-Nonce');
+    if (n) { nonce = n; }
+  }
+  function getNonce() {
+    if (nonce) { var n = nonce; nonce = null; return Promise.resolve(n); }
+    return fetch(dir.newNonce, { method: 'HEAD' }).then(function (r) {
+      var v = r.headers.get('Replay-Nonce');
+      if (!v) { throw new Error('服务端没有返回 nonce'); }
+      return v;
+    });
+  }
+
+  function signedPost(url, payload) {
+    var useJwk = !kid;
+    return getNonce().then(function (n) {
+      var prot = { alg: 'RS256', nonce: n, url: url };
+      if (useJwk) { prot.jwk = pubJwk; } else { prot.kid = kid; }
+      var p64 = b64uStr(JSON.stringify(prot));
+      var pl64 = payload === null ? '' : b64uStr(JSON.stringify(payload));
+      return crypto.subtle.sign(ALG.name, keyPair.privateKey, new TextEncoder().encode(p64 + '.' + pl64))
+        .then(function (sig) {
+          return fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/jose+json' },
+            body: JSON.stringify({ protected: p64, payload: pl64, signature: b64u(sig) })
+          });
+        }).then(function (res) {
+          nonceFrom(res);
+          return res.text().then(function (txt) {
+            var data = null;
+            if (txt) { try { data = JSON.parse(txt); } catch (e) { data = null; } }
+            if (res.status >= 400) {
+              console.error('ACME_FAIL', res.status, url, txt.slice(0, 400));
+              var d = data && (data.detail || data.type) ? (data.detail || data.type) : ('HTTP ' + res.status);
+              var ex = new Error(d);
+              ex.detail = txt.slice(0, 400);
+              throw ex;
+            }
+            return { data: data, text: txt, res: res };
+          });
+        });
+    });
+  }
+
+  function loadDirectory() {
+    if (dir) { return Promise.resolve(dir); }
+    return fetch(DIRECTORY).then(function (r) { return r.json(); }).then(function (j) {
+      dir = j;
+      nonceFrom({ headers: { get: function () { return null; } } });
+      return j;
+    });
+  }
+
+  function ensureAccount() {
+    if (kid) { return Promise.resolve(kid); }
+    var cached = localStorage.getItem(K_KID);
+    if (cached) { kid = cached; return Promise.resolve(kid); }
+    return signedPost(dir.newAccount, { termsOfServiceAgreed: true }).then(function (r) {
+      var loc = r.res.headers.get('Location');
+      if (!loc) { throw new Error('创建账户失败'); }
+      kid = loc;
+      localStorage.setItem(K_KID, loc);
+      return kid;
+    });
+  }
+
+  /* ---------- CSR ---------- */
+  function buildCSR(domain) {
+    var OID = {
+      cn: derOid([0x55, 0x04, 0x03]),
+      san: derOid([0x55, 0x1d, 0x11]),
+      extReq: derOid([0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x09, 0x0e]),
+      sha256RSA: derOid([0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x0b]),
+      null: der(0x05, new Uint8Array(0))
+    };
+    return crypto.subtle.exportKey('spki', certKey.publicKey).then(function (spkiBuf) {
+      var spki = new Uint8Array(spkiBuf);
+      var subject = derSeq(derSet(derSeq(OID.cn, derUtf8(domain))));
+      var genNames = derSeq(der(0x82, new TextEncoder().encode(domain)));
+      var ext = derSeq(OID.san, derOctet(genNames));
+      var attributes = der(0xa0, derSeq(OID.extReq, derSet(derSeq(ext))));
+      var cri = derSeq(der(0x02, Uint8Array.of(0)), subject, spki, attributes);
+      return crypto.subtle.sign(ALG.name, certKey.privateKey, cri).then(function (sig) {
+        return derSeq(cri, derSeq(OID.sha256RSA, OID.null), derBit(new Uint8Array(sig)));
+      });
+    });
+  }
+
+  /* ---------- UI ---------- */
+  function log(line, cls) {
+    var box = $('#flowLog');
+    if (!box) { return; }   // 本版本不显示过程记录
+    var d = document.createElement('div');
+    d.className = 'logline' + (cls ? ' ' + cls : '');
+    d.textContent = line;
+    box.appendChild(d);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function renderFlow() {
+    var box = $('#flow');
+    if (!flow) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+    box.classList.remove('hidden');
+
+    var issued = flow.state === 'issued';
+    var html = '';
+    html += '<div class="flowhead"><span class="dom">' + esc(flow.domain) + '</span>' +
+            (issued ? '<span class="chip ok">已签发</span>'
+                    : (flow.state === 'failed' ? '<span class="chip err">失败</span>'
+                                               : '<span class="chip wait">待验证</span>')) + '</div>';
+    html += '<ol class="steps"><li class="done">提交订单</li>' +
+            (issued ? '<li class="done">添加解析</li><li class="done">验证签发</li>'
+                    : (flow.state === 'failed' ? '<li>添加解析</li><li>验证签发</li>'
+                                               : '<li class="on">添加解析</li><li>验证签发</li>')) + '</ol>';
+
+    if (flow.state === 'failed') {
+      html += '<div class="banner bad" style="margin:10px 0 12px"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 8v5m0 3v.5" stroke="currentColor" stroke-width="1.8"/></svg><div>' + esc(flow.error || '申请失败') + '</div></div>';
+
+    } else if (!issued) {
+      html += '<div class="rec">';
+      html += '<div class="rec-row"><span class="k">主机记录</span><span class="v">_acme-challenge</span>' +
+              '<button class="cp" data-copy="_acme-challenge">复制</button></div>';
+      html += '<div class="rec-row"><span class="k">记录类型</span><span class="v">TXT</span></div>';
+      html += '<div class="rec-row"><span class="k">记录值</span><span class="v">' + esc(flow.txt || '') + '</span>' +
+              '<button class="cp" data-copy="' + esc(flow.txt || '') + '">复制</button></div>';
+      html += '</div>';
+      html += '<button class="btn line" id="btnVerify">我已完成解析，开始验证</button>';
+    } else if (issued) {
+      var meta = certMeta(localStorage.getItem(K_CERT) || '');
+      html += '<div class="certbox">';
+      html += '<div class="row"><span>颁发者</span><b>' + esc(meta.issuer || '读取失败') + '</b></div>';
+      html += '<div class="row"><span>域名</span><b>' + esc(flow.domain) + '</b></div>';
+      html += '<div class="row"><span>到期</span><b>' + esc(meta.notAfter || (flow.end || '90 天后')) + '</b></div>';
+      html += '</div>';
+
+    }
+
+    box.innerHTML = html;
+    bindFlow();
+  }
+
+  function b64ToU8(b64) {
+    var bin = atob(b64.replace(/\s+/g, ''));
+    var out = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) { out[i] = bin.charCodeAt(i); }
+    return out;
+  }
+
+  // 从 PEM 里读出颁发者(organizationName)与到期时间(notAfter)，用于证明证书来源
+  function certMeta(pem) {
+    var res = { issuer: '', notAfter: '' };
+    var m = pem.match(/-----BEGIN CERTIFICATE-----([\s\S]*?)-----END CERTIFICATE-----/);
+    if (!m) { return res; }
+    var der;
+    try { der = b64ToU8(m[1]); } catch (e) { return res; }
+
+    // 颁发者里的 O=Let's Encrypt：OID 55 04 0A 后面紧跟字符串
+    for (var i = 0; i + 4 < der.length; i++) {
+      if (der[i] === 0x06 && der[i + 1] === 0x03 && der[i + 2] === 0x55 && der[i + 3] === 0x04 && der[i + 4] === 0x0a) {
+        var j = i + 5, t = der[j], len = der[j + 1], p = j + 2, txt = '';
+        if (t === 0x0c || t === 0x13 || t === 0x16) {
+          for (var k = 0; k < len; k++) { txt += String.fromCharCode(der[p + k]); }
+          res.issuer = txt;
+          break;
+        }
+      }
+    }
+
+    // notAfter：证书里第二个 UTCTime(0x17)，内容为 YYMMDDHHMMSSZ
+    var seen = 0;
+    for (var n = 0; n + 1 < der.length; n++) {
+      if (der[n] === 0x17 && der[n + 1] === 0x0d) {
+        seen++;
+        if (seen === 2) {
+          var d = '';
+          for (var q = 0; q < 13; q++) { d += String.fromCharCode(der[n + 2 + q]); }
+          var yy = parseInt(d.substr(0, 2), 10);
+          var year = yy < 70 ? 2000 + yy : 1900 + yy;
+          res.notAfter = year + '-' + d.substr(2, 2) + '-' + d.substr(4, 2) + ' ' +
+                         d.substr(6, 2) + ':' + d.substr(8, 2) + ' GMT';
+          break;
+        }
+      }
+    }
+    return res;
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function bindFlow() {
+    var box = $('#flow');
+    box.querySelectorAll('[data-copy]').forEach(function (b) {
+      b.addEventListener('click', function () { copyText(b.getAttribute('data-copy')); });
+    });
+    var v = $('#btnVerify');
+    if (v) { v.addEventListener('click', doVerify); }
+    var c = $('#btnCrt');
+    if (c) { c.addEventListener('click', function () { saveText(flow.domain + '.crt', localStorage.getItem(K_CERT) || ''); }); }
+    var k = $('#btnKey');
+    if (k) {
+      k.addEventListener('click', function () {
+        var j = JSON.parse(localStorage.getItem(K_KEY));
+        // 导出 pkcs8 的 PEM
+        crypto.subtle.importKey('jwk', j.priv, ALG, true, ['sign']).then(function (p) {
+          return crypto.subtle.exportKey('pkcs8', p);
+        }).then(function (buf) {
+          var pem = toPem(buf, 'PRIVATE KEY');
+          saveText(flow.domain + '.key', pem);
+        });
+      });
+    }
+  }
+
+  function toPem(buf, label) {
+    var b = new Uint8Array(buf), s = '', i, c;
+    for (i = 0; i < b.length; i += 8192) {
+      c = b.subarray(i, i + 8192);
+      s += String.fromCharCode.apply(null, c);
+    }
+    var b64 = btoa(s).replace(/(.{64})/g, '$1\n').replace(/\n$/, '');
+    return '-----BEGIN ' + label + '-----\n' + b64 + '\n-----END ' + label + '-----\n';
+  }
+
+  function saveText(name, text) {
+    if (window.AndroidApp && window.AndroidApp.saveFile) {
+      try {
+        if (window.AndroidApp.saveFile(name, text)) { toast('已保存到手机下载目录'); return; }
+      } catch (e) { /* 落到下面的兜底 */ }
+      // App 内保存失败：直接复制，避免用户点了没反应
+      copyText(text);
+      toast('保存失败，内容已复制到剪贴板', true);
+      return;
+    }
+    var blob = new Blob([text], { type: 'text/plain' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
+  }
+
+  function copyText(text) {
+    if (window.AndroidApp && window.AndroidApp.copyText) {
+      try { window.AndroidApp.copyText(text); toast('已复制'); return; } catch (e) { /* 继续 */ }
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { toast('已复制'); }, function () { fallbackCopy(text); });
+    } else { fallbackCopy(text); }
+  }
+  function fallbackCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    var ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    document.body.removeChild(ta);
+    toast(ok ? '已复制' : '复制失败，请长按选中', !ok);
+  }
+
+  /* ---------- 主流程 ---------- */
+  var verifyTries = 0;
+
+  function lockUI() {
+    $('#domain').disabled = true;
+    var b = $('#btnStart');
+    b.disabled = true;
+    b.textContent = '本次处理中，请稍候';
+    $('#usedWarn').style.display = 'flex';
+  }
+
+  function saveFlow() {
+    if (!flow) { localStorage.removeItem(K_STATE); return; }
+    localStorage.setItem(K_STATE, JSON.stringify({
+      domain: flow.domain, orderUrl: flow.orderUrl, authzUrl: flow.authzUrl,
+      chalUrl: flow.chalUrl, token: flow.token, txt: flow.txt,
+      state: flow.state, end: flow.end || ''
+    }));
+  }
+
+  function startIssue() {
+    if (localStorage.getItem(K_USED)) { toast('正在提交中，请等这一次完成', true); return; }
+    var d = normalizeDomain($('#domain').value);
+    if (!d) { toast('域名格式不对，填 example.com 这种', true); return; }
+
+    // 换域名重新签：清掉上一张的展示，证书密钥重新生成
+    localStorage.removeItem(K_CERT);
+    localStorage.removeItem(K_CKEY);
+    certKey = null;
+    renderCert();
+
+    localStorage.setItem(K_USED, '1');
+    localStorage.setItem(K_DOM, d);
+    lockUI();
+    setNet('run', '申请中');
+    verifyTries = 0;
+
+    flow = { domain: d, state: 'working' };
+    renderFlow();
+    if ($('#flowLog')) { $('#flowLog').innerHTML = ''; }
+    log('开始申请：' + d);
+
+    loadDirectory()
+      .then(function () { log('已读取官方 ACME 目录'); return ensureKey(); })
+      .then(function () { log('本地密钥对已就绪'); return ensureAccount(); })
+      .then(function () {
+        log('账户已注册');
+        return signedPost(dir.newOrder, { identifiers: [{ type: 'dns', value: d }] });
+      })
+      .then(function (r) {
+        flow.orderUrl = r.res.headers.get('Location');
+        flow.authzUrl = r.data.authorizations[0];
+        log('订单已创建');
+        return signedPost(flow.authzUrl, null);
+      })
+      .then(function (r) {
+        var ch = (r.data.challenges || []).filter(function (x) { return x.type === 'dns-01'; })[0];
+        if (!ch) { throw new Error('服务端没有返回 dns-01 挑战'); }
+        flow.chalUrl = ch.url;
+        flow.token = ch.token;
+        return thumbprint();
+      })
+      .then(function (thumb) {
+        var keyAuth = flow.token + '.' + thumb;
+        return crypto.subtle.digest('SHA-256', new TextEncoder().encode(keyAuth)).then(function (h) {
+          flow.txt = b64u(h);
+          flow.state = 'waiting_dns';
+          saveFlow();
+          setNet('run', '待验证');
+          renderFlow();
+          // TXT 已给出，本次不再锁死：可以改域名重新提交
+          localStorage.removeItem(K_USED);
+          unlockUI();
+          toast('把 TXT 记录加到 DNS 里');
+        });
+      })
+      .catch(function (e) {
+        var msg = String(e.message || '未知错误');
+        log('出错：' + msg, 'err');
+        setNet('off', '失败');
+        toast('失败：' + shortMsg(msg), true);
+
+        // 解析官方的重试时间（限流类错误会带 retry after ... UTC）
+        var retryAt = 0;
+        var m = msg.match(/retry after (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) UTC/i);
+        if (m) {
+          retryAt = Date.parse(m[1].replace(' ', 'T') + 'Z');
+        }
+
+        // 失败不消耗那唯一一次机会（只有真正签出证书才算用掉）
+        localStorage.removeItem(K_USED);
+        unlockUI();
+
+        if (flow) {
+          flow.state = 'failed';
+          flow.error = msg;
+          flow.retryAt = retryAt;
+          saveFlow();
+          renderFlow();
+        }
+      });
+  }
+
+  function shortMsg(msg) {
+    if (/too many certificates/i.test(msg)) { return '这个域名已触发官方限额'; }
+    if (/retry after/i.test(msg)) { return '官方限流中，暂时不能申请'; }
+    if (/forbidden by policy/i.test(msg)) { return '该域名被官方策略拒绝'; }
+    return msg.length > 60 ? msg.slice(0, 60) + '…' : msg;
+  }
+
+  function fmtLocal(ts) {
+    var d = new Date(ts);
+    function p(n) { return n < 10 ? '0' + n : String(n); }
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) +
+      ' ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+  }
+
+  function unlockUI() {
+    $('#domain').disabled = false;
+    var b = $('#btnStart');
+    b.disabled = false;
+    b.textContent = '提交申请';
+    $('#usedWarn').style.display = 'none';
+  }
+
+  function pollAuthz() {
+    var tries = 0;
+    function step() {
+      return signedPost(flow.authzUrl, null).then(function (r) {
+        var st = r.data.status;
+        if (st === 'valid') { return true; }
+        if (st === 'invalid') {
+          var bad = (r.data.challenges || []).filter(function (c) { return c.error; })[0];
+          var msg = (bad && bad.error && bad.error.detail) ? bad.error.detail : '验证未通过，检查 TXT 记录是否生效';
+          throw new Error(msg);
+        }
+        tries++;
+        if (tries > 10) { throw new Error('等待超时，稍后再点一次验证'); }
+        log('· 状态：' + st + '，3 秒后再查');
+        return sleep(3000).then(step);
+      });
+    }
+    return step();
+  }
+
+  function pollOrder() {
+    var tries = 0;
+    function step() {
+      return signedPost(flow.orderUrl, null).then(function (r) {
+        var o = r.data;
+        if (o.status === 'valid' && o.certificate) { return o.certificate; }
+        if (o.status === 'invalid') { throw new Error('签发失败，订单被拒'); }
+        tries++;
+        if (tries > 15) { throw new Error('签发等待超时'); }
+        log('· 订单状态：' + o.status + '，3 秒后再查');
+        return sleep(3000).then(step);
+      });
+    }
+    return step();
+  }
+
+  function doVerify() {
+    if (!flow || flow.state !== 'waiting_dns') { toast('没有待验证的订单', true); return; }
+    if (verifyTries >= 5) { toast('验证次数已用完', true); return; }
+    verifyTries++;
+
+    var b = $('#btnVerify');
+    if (b) { b.disabled = true; b.textContent = '验证中…'; }
+    setNet('run', '验证中');
+    log('第 ' + verifyTries + ' 次提交验证');
+
+    ensureKey()
+      .then(function () { return signedPost(flow.chalUrl, {}); })
+      .then(function () { log('服务器已接收挑战，开始等待结果'); return pollAuthz(); })
+      .then(function () {
+        log('域名验证通过', 'ok');
+        return signedPost(flow.orderUrl, null);
+      })
+      .then(function (r) {
+        if (!r.data.finalize) { throw new Error('订单里没有签发地址'); }
+        flow.finalizeUrl = r.data.finalize;
+        return ensureCertKey().then(function () { return buildCSR(flow.domain); });
+      })
+      .then(function (csr) {
+        log('证书请求（含 SAN）已生成');
+        return signedPost(flow.finalizeUrl, { csr: b64u(csr) });
+      })
+      .then(function () { log('已提交签发'); return pollOrder(); })
+      .then(function (certUrl) {
+        log('证书已签发，正在下载');
+        return signedPost(certUrl, null);
+      })
+      .then(function (r) {
+        var pem = r.text || '';
+        if (pem.indexOf('-----BEGIN CERTIFICATE-----') < 0) { throw new Error('证书内容异常'); }
+        localStorage.setItem(K_CERT, pem);
+        flow.state = 'issued';
+        flow.end = '90 天有效期';
+        saveFlow();
+        renderFlow();
+        renderCert();
+        setNet('ok', '已完成');
+        toast('签发成功，可以接着签下一个域名');
+        // 完成即解锁：这一次结束，可以提交另一个域名
+        localStorage.removeItem(K_USED);
+        unlockUI();
+      })
+      .catch(function (e) {
+        log('出错：' + e.message, 'err');
+        toast(e.message, true);
+        setNet('off', '失败');
+        var b2 = $('#btnVerify');
+        if (b2) { b2.disabled = false; b2.textContent = '我已完成解析，开始验证'; }
+      });
+  }
+
+  function renderCert() { /* 该版本不显示证书区 */ }
+
+  function exportKeyPem(cb) {
+    var j = JSON.parse(localStorage.getItem(K_CKEY));
+    return function () {
+      crypto.subtle.importKey('jwk', j.priv, ALG, true, ['sign']).then(function (p) {
+        return crypto.subtle.exportKey('pkcs8', p);
+      }).then(function (buf) { cb(toPem(buf, 'PRIVATE KEY')); });
+    };
+  }
+
+  function normalizeDomain(raw) {
+    var d = String(raw || '').trim().toLowerCase();
+    d = d.replace(/^https?:\/\//, '').replace(/\/.*$/, '').replace(/:\d+$/, '');
+    d = d.replace(/[^a-z0-9.-]/g, '');
+    if (!/^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/.test(d)) { return ''; }
     return d;
   }
-  function unitLabel(unit){
-    return unit==='day' ? '天' : (unit==='year' ? '年' : '个月');
-  }
 
-  function setStatus(t){ $('status').textContent = t || ''; }
-  function showErr(t){
-    var b = $('errbox');
-    b.textContent = t;
-    b.style.display = 'block';
-  }
-  function hideErr(){ var b = $('errbox'); b.textContent = ''; b.style.display = 'none'; }
-
-  var LAST = null;
-  function downloadBytes(name, bytes, mime){
-    var u8 = new Uint8Array(bytes.length);
-    for(var i=0;i<bytes.length;i++){ u8[i] = bytes.charCodeAt(i); }
-    var blob = new Blob([u8], {type: mime});
-    var a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = name;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 800);
-  }
-
-  function download(name, text, mime){
-    var blob = new Blob([text], {type: mime || 'application/x-pem-file'});
-    var a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = name;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 800);
-  }
-
-  function sha256hex(str){
-    var md = forge.md.sha256.create();
-    md.update(str);
-    return md.digest().toHex().toUpperCase().replace(/(.{2})/g, '$1:').replace(/:$/, '');
-  }
-
-  function startGenerate(){
-    hideErr();
-    if(ISSUER_CHOICE !== 'local'){ showErr('当前选择的公共 CA 由该机构签发，本页不代签。请按上方说明走 ACME 申请。'); return; }
-    var domains = parseDomains($('domains').value);
-    if(!domains.length){ showErr('请先填写域名。'); return; }
-    setStatus('');
-    issue();
-  }
-
-  var CA_KEY = 'webcat_free_ca_key_v3', CA_CERT = 'webcat_free_ca_crt_v3';
-  var CA_DN_CN = 'Free Issuance';
-  var CA_DN_O = 'Free Issuance';
-
-  function buildCA(){
-    var U = forge.asn1.Type.UTF8;
-    var keys = forge.pki.rsa.generateKeyPair({bits:2048, e:0x10001});
-    var cert = forge.pki.createCertificate();
-    cert.publicKey = keys.publicKey;
-    cert.serialNumber = '01' + forge.util.bytesToHex(forge.random.getBytesSync(15)).toUpperCase();
-    var nb = new Date(); nb.setDate(nb.getDate()-1);
-    var na = new Date(); na.setFullYear(na.getFullYear()+20);
-    cert.validity.notBefore = nb;
-    cert.validity.notAfter = na;
-    cert.setSubject([{name:'commonName', value:CA_DN_CN, valueTagClass:U}]);
-    cert.setIssuer([{name:'commonName', value:CA_DN_CN, valueTagClass:U}]);
-    cert.setExtensions([
-      {name:'basicConstraints', cA:true, critical:true},
-      {name:'keyUsage', keyCertSign:true, cRLSign:true, critical:true},
-      {name:'subjectKeyIdentifier'}
-    ]);
-    cert.sign(keys.privateKey, forge.md.sha256.create());
-    var kp = forge.pki.privateKeyToPem(keys.privateKey);
-    var cp = forge.pki.certificateToPem(cert);
-    try{ localStorage.setItem(CA_KEY, kp); localStorage.setItem(CA_CERT, cp); }catch(e){}
-    return {key:keys.privateKey, cert:cert};
-  }
-
-  function ensureCA(){
-    var k=null, c=null;
-    try{ k = localStorage.getItem(CA_KEY); c = localStorage.getItem(CA_CERT); }catch(e){}
-    if(k && c){
-      try{ return {key:forge.pki.privateKeyFromPem(k), cert:forge.pki.certificateFromPem(c)}; }catch(e){}
+  /* ---------- 视图 ---------- */
+  function switchView(name) {
+    var views = document.querySelectorAll('.view');
+    for (var i = 0; i < views.length; i++) {
+      views[i].classList.toggle('on', views[i].id === 'view-' + name);
     }
-    return buildCA();
+    var tabs = document.querySelectorAll('.tab');
+    for (var j = 0; j < tabs.length; j++) {
+      tabs[j].classList.toggle('on', tabs[j].getAttribute('data-view') === name);
+    }
+    window.scrollTo(0, 0);
   }
 
-  function caFingerprint(cert){
-    var md = forge.md.sha256.create();
-    md.update(forge.pki.certificateToPem(cert));
-    return md.digest().toHex().toUpperCase().match(/.{2}/g).join(':');
-  }
+  /* ---------- 初始化 ---------- */
+  function init() {
+    var tabs = document.querySelectorAll('.tab');
+    for (var i = 0; i < tabs.length; i++) {
+      tabs[i].addEventListener('click', function () { switchView(this.getAttribute('data-view')); });
+    }
+    $('#btnStart').addEventListener('click', startIssue);
+    $('#domain').addEventListener('keydown', function (e) { if (e.key === 'Enter') { startIssue(); } });
 
-  function refreshCA(){
-    var ca;
-    try{ ca = ensureCA(); }catch(e){ return; }
-    $('ca_fp').textContent = caFingerprint(ca.cert);
-    $('ca_status').textContent = '根证书还没生成，点「生成证书」时才会创建（有效期 20 年）。装进系统后，本站生成的证书就会被信任。';
-  }
 
-  function dstr(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
-  function refreshPreview(){
-    var v = $('enddate').value;
-    if(!v){ $('preview').textContent = '到期时间：未选择'; return; }
-    var na = new Date(v+'T23:59:59');
-    var days = Math.floor((na - new Date())/86400000);
-    $('preview').textContent = '到期时间：' + v + (days >= 0 ? '（还剩 ' + days + ' 天）' : '（已过去 ' + (-days) + ' 天，不能用于生成证书）');
-  }
+    // 预载密钥（重启后仍能继续验证）
+    if (localStorage.getItem(K_KEY)) { ensureKey().catch(function () {}); }
 
-  function confTpl(d0){
-    var ngx = 'server {\n' +
-      '    listen 443 ssl;\n' +
-      '    server_name ' + d0 + ';\n\n' +
-      '    ssl_certificate     /etc/ssl/webcat/cert.pem;\n' +
-      '    ssl_certificate_key /etc/ssl/webcat/key.pem;\n' +
-      '    ssl_protocols       TLSv1.2 TLSv1.3;\n\n' +
-      '    location / {\n        root  /var/www/html;\n        index index.html;\n    }\n}\n\n' +
-      'server {\n    listen 80;\n    server_name ' + d0 + ';\n    return 301 https://$host$request_uri;\n}\n';
-    var apa = '<VirtualHost *:443>\n' +
-      '  ServerName ' + d0 + '\n' +
-      '  SSLEngine on\n' +
-      '  SSLCertificateFile    /etc/ssl/webcat/cert.pem\n' +
-      '  SSLCertificateKeyFile /etc/ssl/webcat/key.pem\n' +
-      '  DocumentRoot /var/www/html\n' +
-      '</VirtualHost>\n';
-    return {ngx:ngx, apa:apa};
-  }
-
-  function issue(){
-    if(!window.__tsToken){ showErr('请先完成人机验证，再点生成证书。'); return; }
-    hideErr();
-    $('outbox').style.display='none';
-    var domains = parseDomains($('domains').value);
-    if(!domains.length){ showErr('请至少填写一个域名。'); return; }
-    var bits = parseInt($('bits').value, 10);
-    var endStr = $('enddate').value;
-    if(!endStr){ showErr('请先选择到期日期。'); return; }
-    var endDate = new Date(endStr+'T23:59:59');
-    if(isNaN(endDate.getTime())){ showErr('到期日期格式不对。'); return; }
-    if(endDate.getTime() <= Date.now()){ showErr('到期日期必须晚于今天。'); return; }
-
-    $('go').disabled = true;
-    setStatus('正在生成 RSA 私钥（'+bits+' 位），请稍候…');
-
-    setTimeout(async function(){
-      try{
-        var keys = forge.pki.rsa.generateKeyPair({bits: bits, e: 0x10001});
-
-        var notBefore = new Date();
-        notBefore.setDate(notBefore.getDate()-1);
-        var notAfter = endDate;
-        var serial = forge.util.bytesToHex(forge.random.getBytesSync(18)).toUpperCase();
-
-        var U = forge.asn1.Type.UTF8;
-        var ca = ensureCA();
-        var raw = domains[0];
-        var dnSubject = [
-          {name:'commonName', value: 'Free Issuance', valueTagClass: U}
-        ];
-
-        var cert = forge.pki.createCertificate();
-        cert.publicKey = keys.publicKey;
-        cert.serialNumber = serial;
-        cert.validity.notBefore = notBefore;
-        cert.validity.notAfter = notAfter;
-        cert.setSubject(dnSubject);
-        cert.setIssuer(ca.cert.subject.attributes);
-
-        var altNames = domains.map(function(d){
-          return isIP(d) ? {type:7, ip:d} : {type:2, value:d};
-        });
-        cert.setExtensions([
-          {name:'basicConstraints', cA:false},
-          {name:'keyUsage', digitalSignature:true, keyEncipherment:true, critical:true},
-          {name:'extKeyUsage', serverAuth:true},
-          {name:'subjectAltName', altNames:altNames},
-          {name:'subjectKeyIdentifier'}
-        ]);
-
-        cert.sign(ca.key, forge.md.sha256.create());
-
-        LAST = {privateKey: keys.privateKey, cert: cert};
-        var certPem = forge.pki.certificateToPem(cert);
-        var keyPem = forge.pki.privateKeyToPem(keys.privateKey);
-
-        $('cert').value = certPem;
-        $('key').value = keyPem;
-        $('o_domains').textContent = domains.join(', ');
-        $('o_issuer').textContent = ISSUER;
-        $('o_from').textContent = fmt(notBefore);
-        $('o_to').textContent = fmt(notAfter) + '（自选到期日）';
-        $('o_bits').textContent = 'RSA '+bits;
-        $('o_fp').textContent = sha256hex(certPem);
-        var cf = confTpl(domains[0]);
-        $('ngx_conf').value = cf.ngx;
-        $('apa_conf').value = cf.apa;
-        $('outbox').style.display = 'block';
-        refreshCA();
-        setStatus('生成完成，证书与私钥已在下方。');
-        $('outbox').scrollIntoView({behavior:'smooth', block:'start'});
-      }catch(e){
-        showErr('生成失败：'+(e && e.message ? e.message : e));
-        setStatus('');
-      }finally{
-        $('go').disabled = !window.__tsToken;
+    // 恢复状态
+    if (localStorage.getItem(K_USED)) {
+      lockUI();
+      var st = localStorage.getItem(K_STATE);
+      if (st) {
+        try {
+          flow = JSON.parse(st);
+          if (flow.domain) { $('#domain').value = flow.domain; }
+          renderFlow();
+        } catch (e) { /* 忽略 */ }
       }
-    }, 30);
+    }
+    renderCert();
+
+    if (!window.isSecureContext) {
+      toast('当前环境不支持加密模块，无法签发', true);
+    }
   }
 
-  (function syncDomain(){
-    var txt = ISSUER;
-    var el;
-    if(el = $('issuerTxt')){ el.textContent = txt; }
-    if(el = $('caNameTxt')){ el.textContent = 'CN=Free Issuance'; }
-    if(el = $('footHost')){ el.textContent = SITE.replace(/^https?:\/\//,'').replace(/\/$/,''); }
-  })();
-
-  var ISSUER_CHOICE = 'local';
-  var ISSUER_NOTE = {
-    local: '当前选择：自由签发（Free Issuance），证书在本页本地生成，到期日由你选。装过 rootCA.crt 的设备才信任。',
-    le: '当前选择：Let\u2019s Encrypt（公共 CA）。证书由该机构签发，固定 90 天，不能自选到期日；在下方卡片里直接创建订单、加一条 DNS TXT 就能签发，不需要注册账号、不需要服务器。'
-  };
-  function selectIssuer(k){
-    var el = document.querySelector('.iss[data-k="' + k + '"]');
-    if(!el){ return; }
-    Array.prototype.forEach.call(document.querySelectorAll('.iss'), function(x){ x.classList.remove('on'); });
-    el.classList.add('on');
-    ISSUER_CHOICE = k;
-    $('iss_note').textContent = ISSUER_NOTE[k];
-    var local = k === 'local';
-    $('go').disabled = !local || !window.__tsToken;
-    $('go').textContent = local ? '生成证书' : '该 CA 需外部申请';
-    $('enddate').disabled = !local;
-    if(!local){ $('preview').textContent = '到期时间：由该 CA 决定，不能自选'; }
-    else { refreshPreview(); }
-    setStatus('');
-  }
-  Array.prototype.forEach.call(document.querySelectorAll('.iss'), function(el){
-    el.addEventListener('click', function(){ selectIssuer(el.getAttribute('data-k')); });
-  });
-  $('go').addEventListener('click', startGenerate);
-  (function(){
-    var d = new Date(); d.setDate(d.getDate()+365);
-    $('enddate').value = dstr(d);
-    $('enddate').min = dstr(new Date(Date.now()+86400000));
-  })();
-  $('enddate').addEventListener('input', refreshPreview);
-  $('enddate').addEventListener('change', refreshPreview);
-  (function(){
-    var h = location.hostname;
-    if(h && !$('domains').value){
-      if(h === 'localhost' || /^(\d{1,3}\.){3}\d{1,3}$/.test(h)){ $('domains').value = 'webcat.bbroot.com'; }
-      else { $('domains').value = h; }
-    }
-  })();
-  setTimeout(function(){ selectIssuer(ISSUER_CHOICE); }, 30);
-  $('cp_acme').addEventListener('click', function(){
-    var v = $('acme_dir').textContent;
-    if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(v).then(function(){ setStatus('ACME 目录地址已复制'); }); }
-    else { setStatus('ACME 目录地址：' + v); }
-  });
-  $('dl_ca').addEventListener('click', function(){
-    var ca = ensureCA();
-    download('rootCA.crt', forge.pki.certificateToPem(ca.cert), 'application/x-x509-ca-cert');
-    setStatus('已下载根证书 rootCA.crt，请在设备里安装。');
-  });
-  function copyArea(id, msg){
-    var el = $(id); el.select();
-    if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(el.value).then(function(){ setStatus(msg); }); }
-    else { document.execCommand('copy'); setStatus(msg); }
-  }
-  $('cp_ngx').addEventListener('click', function(){
-    if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText($('ngx_conf').value).then(function(){ setStatus('Nginx 配置已复制'); }); }
-    else { $('ngx_conf').select(); document.execCommand('copy'); setStatus('Nginx 配置已复制'); }
-  });
-  $('cp_apa').addEventListener('click', function(){
-    if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText($('apa_conf').value).then(function(){ setStatus('Apache 配置已复制'); }); }
-    else { $('apa_conf').select(); document.execCommand('copy'); setStatus('Apache 配置已复制'); }
-  });
-  $('dl_cert').addEventListener('click', function(){ download('cert.pem', $('cert').value); });
-  $('dl_chain').addEventListener('click', function(){
-    var c = $('cert').value, root = forge.pki.certificateToPem(ensureCA().cert);
-    if(!c){ showErr('请先生成证书。'); return; }
-    download('fullchain.pem', c.replace(/\s+$/,'') + '\n' + root.replace(/\s+$/,'') + '\n');
-  });
-  $('dl_key').addEventListener('click', function(){ download('key.pem', $('key').value); });
-  $('dl_p12').addEventListener('click', function(){
-    if(!LAST){ showErr('请先生成证书。'); return; }
-    var pass = $('p12pass').value || '';
-    if(pass.length < 6){ showErr('导出口令至少 6 位。'); return; }
-    try{
-      var p12 = forge.pkcs12.toPkcs12Asn1(LAST.privateKey, [LAST.cert], pass, {algorithm:'3des'});
-      downloadBytes('webcat.p12', forge.asn1.toDer(p12).getBytes(), 'application/x-pkcs12');
-      setStatus('已导出加密容器 webcat.p12，请记好口令。');
-    }catch(e){
-      showErr('导出失败：'+(e && e.message ? e.message : e));
-    }
-  });
-  $('cp_cert').addEventListener('click', function(){
-    navigator.clipboard.writeText($('cert').value).then(function(){ setStatus('证书已复制'); });
-  });
-  $('cp_key').addEventListener('click', function(){
-    navigator.clipboard.writeText($('key').value).then(function(){ setStatus('私钥已复制'); });
-  });
+  init();
 })();
 </script>
-
 </body>
 </html>
