@@ -1,119 +1,79 @@
-# Free Issuance SSL 证书分发
+# 证书代签 · Let's Encrypt ACME（DNS-01）
 
-在浏览器本地为你的域名生成 SSL 证书，到期日自己选，证书与私钥都在本地产生，页面不向任何服务器提交内容。
+一个纯静态网页工具：在浏览器里完成 Let's Encrypt 的 ACME v2 签发流程——建单、生成 DNS TXT 记录、验证域名、签发证书，全程不用服务器、不用命令行。
 
-在线地址：https://webcat.bbroot.com/
+在线地址：<https://webcat.bbroot.com/>
 
-## 功能
+---
 
-- 填写域名，自动写入证书的 SAN 扩展，支持多个域名（逗号或换行分隔）、通配符与 IP
-- 到期日直接选：页面上用日期选择器指定失效那天，不按天数、月数往后推算；选好立刻显示「还剩 N 天」
-- 不签发、不查 DNS：页面不向任何 CA 提交申请，也不把域名送去 DNS 解析，没有 CAA 查询闸门，填域名点一下就在本地出证
-- 证书名称统一为英文通用名 `Free Issuance`，域名只写在 SAN 里
-- 支持用口令导出加密的 PKCS#12 容器（`.p12`），内含证书与私钥，适合加密传输
-- 证书与私钥不上传任何服务器，关闭页面即清除
+## 这个仓库里到底有什么
 
-## 信任机制
+| 路径 | 内容 |
+| --- | --- |
+| `docs/` | GitHub Pages 的发布目录（分支 `豆包`，Pages 源设为 `/docs`） |
+| `docs/index.html` | 站点首页：证书代签页面（ACME DNS-01 全流程） |
+| `docs/分发证书/index.html` | 同内容的子页面副本，`/分发证书/` 可直接访问 |
+| `docs/assets/` | 页面用图：`hero.jpg`（浅色横幅）、`cloudflare.png` / `cloudflare.webp`（图标） |
+| `docs/CNAME` | 自定义域名 `webcat.bbroot.com` |
+| `docs/.nojekyll` | 关闭 Jekyll 处理，保证文件原样发布 |
+| `docs/forge.min.js`、`docs/分发证书/forge.min.js` | 早期本地生成版本留下的库文件，当前页面已不再引用 |
+| `docs/downloads/` | 早期版本导出的 `ca.key`、`cert.csr`、`cert.key`，仅为历史残留，页面不再生成这些文件 |
+| `docs/GKD-subscription.json3`、`GKD-subscription.json3` | GKD 订阅规则文件（含 `docs` 内外两份，体积约 1.1 MB） |
+| `php/` | 一组单文件 PHP 小工具：Base64 编解码、大小写转换、数字转中文、密码生成、随机语录、文本反转、时间换算 |
+| `php/acme/` | 引入 [skoerfgen/ACMECert](https://github.com/skoerfgen/ACMECert) v3.7.3 源码（MIT，见该目录 `LICENSE.md`），供服务器侧走 ACME v2 |
+| `python/` | 与 `php/` 对应的 Python 版小工具（同样的 7 个功能） |
+| `live2.html` | 早期临时页面，未被站点引用 |
+| `LICENSE` | Apache License 2.0 |
 
-站点自建一张根证书（`CN=Free Issuance Root CA, O=Free Issuance`，有效期 20 年），由它签发站点证书（`CN=Free Issuance, O=Free Issuance`）。
+---
 
-- 把 `rootCA.crt` 装进设备信任列表后，本站生成的证书即被系统信任，到期日不受公共 CA 限制
-- 安卓：设置 → 安全 → 加密与凭据 → 安装证书 → CA 证书
-- Windows：双击导入，证书存储选「受信任的根证书颁发机构」
-- iOS：用描述文件安装，再到「关于本机 → 证书信任设置」开启完全信任
+## 页面能做什么
 
-根证书在本机浏览器里只生成一次，之后一直复用同一张，页面没有重置入口。想换新根证书只能清掉该站点的浏览器数据（`localStorage`）后重新打开。
+- 输入一个域名（自动去掉 `http(s)://`、路径和端口），点「提交申请」即向 Let's Encrypt 建单
+- 页面会算出并显示一条 DNS 记录：主机记录 `_acme-challenge`、类型 `TXT`、记录值一串随机串，带复制按钮
+- 把记录添加到 DNS 后，点「我已完成解析，开始验证」，页面自己完成 challenge 提交、轮询授权状态、finalize、下载证书
+- 签发成功后显示颁发者、域名、到期时间，证书与私钥都保存在浏览器本地（`localStorage`），不上传任何服务器
+- 已签发、待验证的订单状态会存下来，关掉页面再打开还能接着往下走
 
-注意：自建根证书只对装过它的设备生效；没装过的设备仍会提示证书不受信任。要让所有人默认信任，只能使用公共 CA 签发的证书，而公共 CA 的有效期不可自定义。
+**有效期由 Let's Encrypt 决定**，一般是 90 天，页面不能自选到期日。
 
-## 在服务器上启用 HTTPS
+## 人机验证
 
-生成成功后，页面结果区会直接给出 Nginx 与 Apache 两段配置，域名自动替换成你填的域名，可一键复制。
+页面接入了 Cloudflare Turnstile。未通过验证时：
 
-先上传证书（示例路径 `/etc/ssl/webcat/`）：
+- 「提交申请」按钮保持禁用，点不动；
+- 即使绕过按钮直接调用，代码也会在发请求前拦下并提示先完成验证。
 
-```
-fullchain.pem → /etc/ssl/webcat/fullchain.pem
-cert.pem      → /etc/ssl/webcat/cert.pem
-key.pem       → /etc/ssl/webcat/key.pem
-```
+站点密钥写在前端（`data-sitekey="0x4AAAAAAF_m03XPKegNGNal"`），密钥本身不参与签发逻辑。
 
-Nginx 关键配置：
+> 注意：该 sitekey 需要在 Cloudflare 后台把 `webcat.bbroot.com` 加入对应 widget 的 Hostname Management，否则组件会报 `110200 Domain not authorized` 并渲染失败。
 
-```
-server {
-    listen 443 ssl;
-    server_name 你的域名;
+## 已知限制
 
-    ssl_certificate     /etc/ssl/webcat/fullchain.pem;
-    ssl_certificate_key /etc/ssl/webcat/key.pem;
-    ssl_protocols       TLSv1.2 TLSv1.3;
+- **Let's Encrypt 频率限制**：同一根域 168 小时内最多 50 张。超限时页面会把原文错误展示出来（含 `retry after ... UTC` 时间），这段时间内该根域下所有子域都签不了
+- 浏览器直连 ACME 需要页面处于 HTTPS（或 `localhost`），否则 `crypto.subtle` 不可用
+- 页面不做 DNS 预检，TXT 没生效时验证会失败，页面会提示「验证未通过」
+- 通配符域名（`*.example.com`）走 DNS-01 理论可用，但需要为同一个 `_acme-challenge` 记录同时放多条 TXT；当前页面一次只处理单域名
 
-    location / {
-        root  /var/www/html;
-        index index.html;
-    }
-}
+## 使用步骤
 
-server {
-    listen 80;
-    server_name 你的域名;
-    return 301 https://$host$request_uri;
-}
-```
+1. 打开 <https://webcat.bbroot.com/>，通过人机验证
+2. 填域名（例如 `webcat.bbroot.com`），点「提交申请」
+3. 按页面给出的主机记录与记录值，去 DNS 服务商添加 TXT
+4. 等解析生效后，点「我已完成解析，开始验证」
+5. 签发成功后，在浏览器里取回证书与私钥，配置到 Nginx / Apache
 
-Apache 关键配置：
+## 部署说明
 
-```
-<VirtualHost *:443>
-  ServerName 你的域名
-  SSLEngine on
-  SSLCertificateFile    /etc/ssl/webcat/fullchain.pem
-  SSLCertificateKeyFile /etc/ssl/webcat/key.pem
-  DocumentRoot /var/www/html
-</VirtualHost>
-```
+本仓库用 GitHub Pages 发布：
 
-改完先自检再重载：
-
-```
-nginx -t && nginx -s reload
-apachectl configtest && systemctl reload httpd
-```
-
-前提仍然是客户端装过 `rootCA.crt`，否则浏览器会提示证书不受信任。
-
-## 关于 CAA
-
-CAA（RFC 8659）是 DNS 里声明“哪些公共 CA 可以给本域名签证书”的记录，只有公共 CA 在签发前会查询它：
-
-- 它与本站的自建 CA 无关：页面在本地生成证书，不检查 CAA，也不发任何 DNS 查询
-- 它不能替代根证书安装。证书是否被信任，只取决于客户端有没有装 `rootCA.crt`
-- `0 issue ";"` 的含义是“不允许任何 CA 签发”，不是“宽松放行”
-- `issue` 的值只能是 CA 域名，写成网址或路径属于非标准用法
-
-如果域名同时用 GitHub Pages 托管，证书由 Let's Encrypt 签发，配置 CAA 时必须保留 `letsencrypt.org`，否则到期续签会被拒绝。
-
-## 使用方式
-
-1. 打开站点，域名框已预填当前域名，可改成你要的域名或多个域名
-2. 在「到期日期」里直接选失效那天，页面显示还剩多少天
-3. 点「生成证书」
-4. 页面立即生成证书与私钥，并显示颁发机构与失效时间
-5. 下载 `rootCA.crt` 装进设备，再下载 `cert.pem` / `fullchain.pem` / `key.pem`，或用口令导出加密的 `.p12`
-6. 结果区还会给出 Nginx / Apache 的 HTTPS 配置，复制到服务器重载即可开启 HTTPS
-
-## 附带的 PHP 签发库
-
-`php/acme/` 直接引入开源项目 [skoerfgen/ACMECert](https://github.com/skoerfgen/ACMECert) v3.7.3 的源码（MIT 许可，版权归 Stefan Körfgen，许可证见该目录 `LICENSE.md`），用于让服务器自己走 ACME v2 向公共 CA 申请证书，支持 `http-01`、`dns-01`、`tls-alpn-01`。
-
-它与本站页面里用自建根证书在本地生成的证书无关：一个是公共可信证书，有效期由 CA 决定；一个是自建证书，到期日自选，但只有装过根证书的设备才信任。
-
-使用前 CAA 需放行：根域加 `0 issue "letsencrypt.org"`（已成 CNAME 的域名不能再挂 CAA）。
+- 发布分支：`豆包`，目录 `/docs`
+- 自定义域名：`webcat.bbroot.com`（`CNAME` 记录指向 `webcstx.github.io`）
+- 站点自身的 HTTPS 证书由 GitHub Pages 自动申请（Let's Encrypt），不依赖页面里的功能
 
 ## 许可证
 
-本项目采用 [Apache License 2.0](LICENSE)。
+[Apache License 2.0](LICENSE)。`php/acme/` 目录内的源码为 MIT 许可，版权归 Stefan Körfgen。
 
 ## 作者
 
