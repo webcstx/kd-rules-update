@@ -399,6 +399,14 @@ button{font-family:inherit}
       html += '<div class="row"><span>到期</span><b>' + esc(meta.notAfter || (flow.end || '90 天后')) + '</b></div>';
       html += '</div>';
 
+      html += '<label class="lbl" style="margin-top:14px">证书（PEM，可另存为 fullchain.pem）</label>';
+      html += '<textarea id="outCert" class="field" style="height:132px;font-size:12px;line-height:1.5" readonly></textarea>';
+      html += '<div style="display:flex;gap:8px;margin-top:8px"><button class="btn ghost sm" id="cpCert" style="flex:1">复制证书</button><button class="btn ghost sm" id="dlCert" style="flex:1">下载证书</button></div>';
+      html += '<label class="lbl" style="margin-top:14px">私钥（PEM，可另存为 privkey.pem，请勿外传）</label>';
+      html += '<textarea id="outKey" class="field" style="height:132px;font-size:12px;line-height:1.5" readonly></textarea>';
+      html += '<div style="display:flex;gap:8px;margin-top:8px"><button class="btn ghost sm" id="cpKey" style="flex:1">复制私钥</button><button class="btn ghost sm" id="dlKey" style="flex:1">下载私钥</button></div>';
+      html += '<p class="tip" style="margin:10px 0 0">证书与私钥只存在这台设备的浏览器里，刷新不丢，清站点数据即消失。</p>';
+
     }
 
     box.innerHTML = html;
@@ -461,6 +469,18 @@ button{font-family:inherit}
     box.querySelectorAll('[data-copy]').forEach(function (b) {
       b.addEventListener('click', function () { copyText(b.getAttribute('data-copy')); });
     });
+    var oc = $('#outCert');
+    if (oc) {
+      oc.value = localStorage.getItem(K_CERT) || '';
+      $('#cpCert').addEventListener('click', function () { copyText($('#outCert').value); });
+      $('#dlCert').addEventListener('click', function () { saveText((flow.domain || 'cert') + '.pem', $('#outCert').value); });
+    }
+    var ok2 = $('#outKey');
+    if (ok2) {
+      fillKeyPem();
+      $('#cpKey').addEventListener('click', function () { copyText($('#outKey').value); });
+      $('#dlKey').addEventListener('click', function () { saveText((flow.domain || 'cert') + '.key', $('#outKey').value || ''); });
+    }
     var v = $('#btnVerify');
     if (v) { v.addEventListener('click', doVerify); }
     var c = $('#btnCrt');
@@ -478,6 +498,21 @@ button{font-family:inherit}
         });
       });
     }
+  }
+
+  function fillKeyPem() {
+    var box = $('#outKey');
+    if (!box) { return; }
+    var raw = localStorage.getItem(K_CKEY);
+    if (!raw) { return; }
+    try {
+      var j = JSON.parse(raw);
+      crypto.subtle.importKey('jwk', j.priv, ALG, true, ['sign']).then(function (p) {
+        return crypto.subtle.exportKey('pkcs8', p);
+      }).then(function (buf) {
+        box.value = toPem(buf, 'PRIVATE KEY');
+      }).catch(function () {});
+    } catch (e) { /* 忽略 */ }
   }
 
   function toPem(buf, label) {
