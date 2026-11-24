@@ -110,6 +110,7 @@ button{font-family:inherit}
     <div class="sub">官方 ACME 直连 · 无需密钥</div>
   </div>
   <select class="langpick" id="langPick">
+<option value="auto">系统语言</option>
   <option value="zh-CN">简体中文</option>
   <option value="zh-TW">繁體中文</option>
   <option value="en">English</option>
@@ -835,32 +836,43 @@ button{font-family:inherit}
   }
 
   var I18N = {
-    'zh-CN': { t:'证书代签', s:'官方 ACME 直连 · 无需密钥', d:'要签发的域名', b:'提交申请' , ph:'例如 example.com' },
-    'zh-TW': { t:'證書代簽', s:'官方 ACME 直連 · 無需金鑰', d:'要簽發的網域', b:'提交申請' , ph:'例如 example.com' },
-    en:      { t:'Certificate Signing', s:'Official ACME · no keys needed', d:'Domain to issue', b:'Submit' , ph:'e.g. example.com' },
-    ja:      { t:'証明書代理発行', s:'公式 ACME 直結・鍵不要', d:'発行するドメイン', b:'申請する' , ph:'例：example.com' },
-    ko:      { t:'인증서 대행 발급', s:'공식 ACME 직결 · 키 불필요', d:'발급할 도메인', b:'신청하기' , ph:'예: example.com' },
-    fr:      { t:'Signature de certificat', s:'ACME officiel · sans clé', d:'Domaine à signer', b:'Envoyer' , ph:'ex. example.com' },
-    de:      { t:'Zertifikat-Ausstellung', s:'Offizielles ACME · ohne Schlüssel', d:'Domain zum Ausstellen', b:'Absenden' , ph:'z. B. example.com' },
-    es:      { t:'Emisión de certificados', s:'ACME oficial · sin claves', d:'Dominio a emitir', b:'Enviar' , ph:'p. ej. example.com' },
-    pt:      { t:'Emissão de certificado', s:'ACME oficial · sem chaves', d:'Domínio a emitir', b:'Enviar' , ph:'ex.: example.com' },
-    ru:      { t:'Выпуск сертификата', s:'Официальный ACME · без ключей', d:'Домен для выпуска', b:'Отправить' , ph:'напр. example.com' },
-    it:      { t:'Rilascio certificato', s:'ACME ufficiale · senza chiavi', d:'Dominio da emettere', b:'Invia' , ph:'es. example.com' },
-    ar:      { t:'إصدار الشهادات', s:'ACME الرسمي · بدون مفاتيح', d:'النطاق المطلوب إصداره', b:'إرسال' , ph:'مثال: example.com' },
-    th:      { t:'ออกใบรับรอง', s:'ACME ทางการ · ไม่ต้องใช้คีย์', d:'โดเมนที่ต้องการออก', b:'ส่งคำขอ' , ph:'เช่น example.com' },
-    vi:      { t:'Cấp chứng chỉ', s:'ACME chính thức · không cần khóa', d:'Tên miền cần cấp', b:'Gửi yêu cầu' , ph:'ví dụ example.com' },
-    id:      { t:'Penerbitan sertifikat', s:'ACME resmi · tanpa kunci', d:'Domain yang diterbitkan', b:'Kirim' , ph:'mis. example.com' },
-    ms:      { t:'Penerbitan sijil', s:'ACME rasmi · tanpa kunci', d:'Domain untuk diterbitkan', b:'Hantar' , ph:'cth. example.com' },
-    tr:      { t:'Sertifika verme', s:'Resmî ACME · anahtarsız', d:'Verilecek alan adı', b:'Gönder' , ph:'örn. example.com' },
-    hi:      { t:'प्रमाणपत्र जारी करना', s:'आधिकारिक ACME · कुंजी की आवश्यकता नहीं', d:'जारी करने वाला डोमेन', b:'सबमिट करें' , ph:'उदा. example.com' },
-    nl:      { t:'Certificaatuitgifte', s:'Officieel ACME · geen sleutels', d:'Domein om uit te geven', b:'Verzenden' , ph:'bijv. example.com' },
-    pl:      { t:'Wydawanie certyfikatów', s:'Oficjalny ACME · bez kluczy', d:'Domena do wydania', b:'Wyślij', ph:'np. example.com' }
+    'zh-CN': { t:'证书代签', s:'官方 ACME 直连 · 无需密钥', d:'要签发的域名', b:'提交申请' , ph:'例如 example.com', sl:'系统语言' },
+    'zh-TW': { t:'證書代簽', s:'官方 ACME 直連 · 無需金鑰', d:'要簽發的網域', b:'提交申請' , ph:'例如 example.com', sl:'系統語言' },
+    en:      { t:'Certificate Signing', s:'Official ACME · no keys needed', d:'Domain to issue', b:'Submit' , ph:'e.g. example.com', sl:'System language' },
+    ja:      { t:'証明書代理発行', s:'公式 ACME 直結・鍵不要', d:'発行するドメイン', b:'申請する' , ph:'例：example.com', sl:'システム言語' },
+    ko:      { t:'인증서 대행 발급', s:'공식 ACME 직결 · 키 불필요', d:'발급할 도메인', b:'신청하기' , ph:'예: example.com', sl:'시스템 언어' },
+    fr:      { t:'Signature de certificat', s:'ACME officiel · sans clé', d:'Domaine à signer', b:'Envoyer' , ph:'ex. example.com', sl:'Langue du système' },
+    de:      { t:'Zertifikat-Ausstellung', s:'Offizielles ACME · ohne Schlüssel', d:'Domain zum Ausstellen', b:'Absenden' , ph:'z. B. example.com', sl:'Systemsprache' },
+    es:      { t:'Emisión de certificados', s:'ACME oficial · sin claves', d:'Dominio a emitir', b:'Enviar' , ph:'p. ej. example.com', sl:'Idioma del sistema' },
+    pt:      { t:'Emissão de certificado', s:'ACME oficial · sem chaves', d:'Domínio a emitir', b:'Enviar' , ph:'ex.: example.com', sl:'Idioma do sistema' },
+    ru:      { t:'Выпуск сертификата', s:'Официальный ACME · без ключей', d:'Домен для выпуска', b:'Отправить' , ph:'напр. example.com', sl:'Язык системы' },
+    it:      { t:'Rilascio certificato', s:'ACME ufficiale · senza chiavi', d:'Dominio da emettere', b:'Invia' , ph:'es. example.com', sl:'Lingua di sistema' },
+    ar:      { t:'إصدار الشهادات', s:'ACME الرسمي · بدون مفاتيح', d:'النطاق المطلوب إصداره', b:'إرسال' , ph:'مثال: example.com', sl:'لغة النظام' },
+    th:      { t:'ออกใบรับรอง', s:'ACME ทางการ · ไม่ต้องใช้คีย์', d:'โดเมนที่ต้องการออก', b:'ส่งคำขอ' , ph:'เช่น example.com', sl:'ภาษาของระบบ' },
+    vi:      { t:'Cấp chứng chỉ', s:'ACME chính thức · không cần khóa', d:'Tên miền cần cấp', b:'Gửi yêu cầu' , ph:'ví dụ example.com', sl:'Ngôn ngữ hệ thống' },
+    id:      { t:'Penerbitan sertifikat', s:'ACME resmi · tanpa kunci', d:'Domain yang diterbitkan', b:'Kirim' , ph:'mis. example.com', sl:'Bahasa sistem' },
+    ms:      { t:'Penerbitan sijil', s:'ACME rasmi · tanpa kunci', d:'Domain untuk diterbitkan', b:'Hantar' , ph:'cth. example.com', sl:'Bahasa sistem' },
+    tr:      { t:'Sertifika verme', s:'Resmî ACME · anahtarsız', d:'Verilecek alan adı', b:'Gönder' , ph:'örn. example.com', sl:'Sistem dili' },
+    hi:      { t:'प्रमाणपत्र जारी करना', s:'आधिकारिक ACME · कुंजी की आवश्यकता नहीं', d:'जारी करने वाला डोमेन', b:'सबमिट करें' , ph:'उदा. example.com', sl:'सिस्टम भाषा' },
+    nl:      { t:'Certificaatuitgifte', s:'Officieel ACME · geen sleutels', d:'Domein om uit te geven', b:'Verzenden' , ph:'bijv. example.com', sl:'Systeemtaal' },
+    pl:      { t:'Wydawanie certyfikatów', s:'Oficjalny ACME · bez kluczy', d:'Domena do wydania', b:'Wyślij', ph:'np. example.com', sl:'Język systemu' }
   };
   var K_LANG = 'ui_lang_v1';
 
+  function sysLang() {
+    var nav = (navigator.language || 'zh-CN').toLowerCase();
+    if (nav.indexOf('zh-tw') === 0 || nav.indexOf('zh-hk') === 0 || nav.indexOf('zh-hant') === 0) { return 'zh-TW'; }
+    if (nav.indexOf('zh') === 0) { return 'zh-CN'; }
+    var short = nav.split('-')[0];
+    if (I18N[short]) { return short; }
+    return 'zh-CN';
+  }
+
   function pickLang() {
     var saved = localStorage.getItem(K_LANG);
+    if (saved === 'auto') { return sysLang(); }
     if (saved && I18N[saved]) { return saved; }
+    return sysLang();
     var nav = (navigator.language || 'zh-CN').toLowerCase();
     if (nav.indexOf('zh-tw') === 0 || nav.indexOf('zh-hk') === 0 || nav.indexOf('zh-hant') === 0) { return 'zh-TW'; }
     if (nav.indexOf('zh') === 0) { return 'zh-CN'; }
@@ -892,13 +904,18 @@ button{font-family:inherit}
     }
     var lp = document.getElementById('langPick');
     if (lp) {
+      var sysc = sysLang();
+      var autoOpt = lp.querySelector('option[value="auto"]');
+      if (autoOpt) { autoOpt.textContent = (I18N[sysc] || I18N['zh-CN']).sl || 'System language'; }
+      var savedLang = localStorage.getItem(K_LANG);
       var cur = pickLang();
-      lp.value = cur;
+      lp.value = (savedLang === 'auto' || (savedLang && I18N[savedLang])) ? savedLang : 'auto';
       applyLang(cur);
       lp.addEventListener('change', function () {
         localStorage.setItem(K_LANG, lp.value);
-        applyLang(lp.value);
-        if ($('#btnStart') && !$('#btnStart').disabled) { $('#btnStart').textContent = (I18N[lp.value] || I18N['zh-CN']).b; }
+        var code = lp.value === 'auto' ? sysLang() : lp.value;
+        applyLang(code);
+        if ($('#btnStart') && !$('#btnStart').disabled) { $('#btnStart').textContent = (I18N[code] || I18N['zh-CN']).b; }
       });
     }
     $('#btnStart').addEventListener('click', startIssue);
