@@ -84,6 +84,7 @@ button{font-family:inherit}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 #toast.bad{background:#8c2b1f}
 .hidden{display:none}
+.langpick{appearance:none;border:1px solid #e3e7ee;background:#fff;color:#12181f;border-radius:9px;font-size:12.5px;padding:5px 8px;line-height:1.2}
 .footbar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 14px calc(8px + env(safe-area-inset-bottom));background:rgba(255,255,255,.94);border-top:1px solid #e3e7ee;font-size:12px}
 .footbar .icp{color:#68727f;text-decoration:none}
 .footbar .icp:active{color:#0b7a5c}
@@ -108,6 +109,28 @@ button{font-family:inherit}
     <div class="name">证书代签</div>
     <div class="sub">官方 ACME 直连 · 无需密钥</div>
   </div>
+  <select class="langpick" id="langPick">
+  <option value="zh-CN">简体中文</option>
+  <option value="zh-TW">繁體中文</option>
+  <option value="en">English</option>
+  <option value="ja">日本語</option>
+  <option value="ko">한국어</option>
+  <option value="fr">Français</option>
+  <option value="de">Deutsch</option>
+  <option value="es">Español</option>
+  <option value="pt">Português</option>
+  <option value="ru">Русский</option>
+  <option value="it">Italiano</option>
+  <option value="ar">العربية</option>
+  <option value="th">ไทย</option>
+  <option value="vi">Tiếng Việt</option>
+  <option value="id">Bahasa Indonesia</option>
+  <option value="ms">Bahasa Melayu</option>
+  <option value="tr">Türkçe</option>
+  <option value="hi">हिन्दी</option>
+  <option value="nl">Nederlands</option>
+  <option value="pl">Polski</option>
+  </select>
   <div class="dot"><i id="netDot"></i><span id="netTxt">空闲</span></div>
 </header>
 
@@ -811,11 +834,70 @@ button{font-family:inherit}
     window.scrollTo(0, 0);
   }
 
+  var I18N = {
+    'zh-CN': { t:'证书代签', s:'官方 ACME 直连 · 无需密钥', d:'要签发的域名', b:'提交申请' },
+    'zh-TW': { t:'證書代簽', s:'官方 ACME 直連 · 無需金鑰', d:'要簽發的網域', b:'提交申請' },
+    en:      { t:'Certificate Signing', s:'Official ACME · no keys needed', d:'Domain to issue', b:'Submit' },
+    ja:      { t:'証明書代理発行', s:'公式 ACME 直結・鍵不要', d:'発行するドメイン', b:'申請する' },
+    ko:      { t:'인증서 대행 발급', s:'공식 ACME 직결 · 키 불필요', d:'발급할 도메인', b:'신청하기' },
+    fr:      { t:'Signature de certificat', s:'ACME officiel · sans clé', d:'Domaine à signer', b:'Envoyer' },
+    de:      { t:'Zertifikat-Ausstellung', s:'Offizielles ACME · ohne Schlüssel', d:'Domain zum Ausstellen', b:'Absenden' },
+    es:      { t:'Emisión de certificados', s:'ACME oficial · sin claves', d:'Dominio a emitir', b:'Enviar' },
+    pt:      { t:'Emissão de certificado', s:'ACME oficial · sem chaves', d:'Domínio a emitir', b:'Enviar' },
+    ru:      { t:'Выпуск сертификата', s:'Официальный ACME · без ключей', d:'Домен для выпуска', b:'Отправить' },
+    it:      { t:'Rilascio certificato', s:'ACME ufficiale · senza chiavi', d:'Dominio da emettere', b:'Invia' },
+    ar:      { t:'إصدار الشهادات', s:'ACME الرسمي · بدون مفاتيح', d:'النطاق المطلوب إصداره', b:'إرسال' },
+    th:      { t:'ออกใบรับรอง', s:'ACME ทางการ · ไม่ต้องใช้คีย์', d:'โดเมนที่ต้องการออก', b:'ส่งคำขอ' },
+    vi:      { t:'Cấp chứng chỉ', s:'ACME chính thức · không cần khóa', d:'Tên miền cần cấp', b:'Gửi yêu cầu' },
+    id:      { t:'Penerbitan sertifikat', s:'ACME resmi · tanpa kunci', d:'Domain yang diterbitkan', b:'Kirim' },
+    ms:      { t:'Penerbitan sijil', s:'ACME rasmi · tanpa kunci', d:'Domain untuk diterbitkan', b:'Hantar' },
+    tr:      { t:'Sertifika verme', s:'Resmî ACME · anahtarsız', d:'Verilecek alan adı', b:'Gönder' },
+    hi:      { t:'प्रमाणपत्र जारी करना', s:'आधिकारिक ACME · कुंजी की आवश्यकता नहीं', d:'जारी करने वाला डोमेन', b:'सबमिट करें' },
+    nl:      { t:'Certificaatuitgifte', s:'Officieel ACME · geen sleutels', d:'Domein om uit te geven', b:'Verzenden' },
+    pl:      { t:'Wydawanie certyfikatów', s:'Oficjalny ACME · bez kluczy', d:'Domena do wydania', b:'Wyślij' }
+  };
+  var K_LANG = 'ui_lang_v1';
+
+  function pickLang() {
+    var saved = localStorage.getItem(K_LANG);
+    if (saved && I18N[saved]) { return saved; }
+    var nav = (navigator.language || 'zh-CN').toLowerCase();
+    if (nav.indexOf('zh-tw') === 0 || nav.indexOf('zh-hk') === 0 || nav.indexOf('zh-hant') === 0) { return 'zh-TW'; }
+    if (nav.indexOf('zh') === 0) { return 'zh-CN'; }
+    var short = nav.split('-')[0];
+    if (I18N[short]) { return short; }
+    return 'zh-CN';
+  }
+
+  function applyLang(code) {
+    var d = I18N[code] || I18N['zh-CN'];
+    var name = document.querySelector('.topbar .name');
+    var sub = document.querySelector('.topbar .sub');
+    var lbl = document.querySelector('#view-issue .card h2');
+    var btn = document.getElementById('btnStart');
+    if (name) { name.textContent = d.t; }
+    if (sub) { sub.textContent = d.s; }
+    if (lbl) { lbl.textContent = d.d; }
+    if (btn && !btn.disabled) { btn.textContent = d.b; }
+    try { document.documentElement.lang = code; } catch (e) {}
+  }
+
   /* ---------- 初始化 ---------- */
   function init() {
     var tabs = document.querySelectorAll('.tab');
     for (var i = 0; i < tabs.length; i++) {
       tabs[i].addEventListener('click', function () { switchView(this.getAttribute('data-view')); });
+    }
+    var lp = document.getElementById('langPick');
+    if (lp) {
+      var cur = pickLang();
+      lp.value = cur;
+      applyLang(cur);
+      lp.addEventListener('change', function () {
+        localStorage.setItem(K_LANG, lp.value);
+        applyLang(lp.value);
+        if ($('#btnStart') && !$('#btnStart').disabled) { $('#btnStart').textContent = (I18N[lp.value] || I18N['zh-CN']).b; }
+      });
     }
     $('#btnStart').addEventListener('click', startIssue);
     $('#domain').addEventListener('keydown', function (e) { if (e.key === 'Enter') { startIssue(); } });
