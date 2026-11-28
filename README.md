@@ -17,7 +17,6 @@
 | `docs/CNAME` | 自定义域名 `webcat.bbroot.com` |
 | `docs/.nojekyll` | 关闭 Jekyll 处理，保证文件原样发布 |
 | `docs/forge.min.js`、`docs/分发证书/forge.min.js` | 早期本地生成版本留下的库文件，当前页面已不再引用 |
-| `docs/downloads/` | 早期版本导出的 `ca.key`、`cert.csr`、`cert.key`，仅为历史残留，页面不再生成这些文件 |
 | `docs/GKD-subscription.json3`、`GKD-subscription.json3` | GKD 订阅规则文件（含 `docs` 内外两份，体积约 1.1 MB） |
 | `php/` | 一组单文件 PHP 小工具：Base64 编解码、大小写转换、数字转中文、密码生成、随机语录、文本反转、时间换算 |
 | `php/acme/` | 引入 [skoerfgen/ACMECert](https://github.com/skoerfgen/ACMECert) v3.7.3 源码（MIT，见该目录 `LICENSE.md`），供服务器侧走 ACME v2 |
